@@ -8,9 +8,9 @@ namespace LangPrint.Utils
 {
     public static class Helper
     {
-        public static string JoinString(string separator, IEnumerable<string> values, string prefix = null)
+        public static string JoinString(string separator, IEnumerable<string> values, string prefix = null, string suffix = null)
         {
-            return string.Join(separator, values.Select(s => $"{prefix}{s}"));
+            return string.Join(separator, values.Select(s => $"{prefix}{s}{suffix}"));
         }
     }
 }

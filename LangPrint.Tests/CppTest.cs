@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using LangPrint.Cpp;
 using Xunit;
 using Xunit.Abstractions;
@@ -23,7 +25,8 @@ namespace LangPrint.Tests
             var cpp = new CppProcessor();
             cpp.Process(file);
 
-            string genStr = cpp.Generate();
+            Dictionary<string, string> cppGen = cpp.Generate();
+            string genStr = cppGen.ElementAt(0).Value;
 
             _testOutputHelper.WriteLine(genStr);
         }

@@ -2,11 +2,13 @@
 
 namespace LangPrint
 {
-    public interface ILangProcessor<out T>
+    public interface ILangProcessor<TModel, in TOptions>
     {
-        T Model { get; }
+        LangOptions Options { get; }
+        TModel Model { get; }
 
-        T Process(string jsonData, LangPrintOptions options);
+        void Process(TModel model, TOptions options);
+        void Process(string jsonData, TOptions options);
         Dictionary<string, string> Generate();
     }
 }

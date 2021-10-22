@@ -29,6 +29,27 @@ namespace LangPrint.Cpp
 
         [JsonProperty("Value")]
         public string Value { get; set; }
+
+        [JsonProperty("Condition")]
+        public List<string> Condition { get; set; }
+    }
+
+    public class CppVariable
+    {
+        [JsonProperty("Extern")]
+        public bool Extern { get; set; }
+
+        [JsonProperty("Type")]
+        public string Type { get; set; }
+
+        [JsonProperty("Name")]
+        public string Name { get; set; }
+
+        [JsonProperty("Value")]
+        public string Value { get; set; }
+
+        [JsonProperty("Condition")]
+        public List<string> Condition { get; set; }
     }
 
     public class CppValue
@@ -133,36 +154,6 @@ namespace LangPrint.Cpp
         public List<string> Condition { get; set; }
     }
 
-    public class CppMethod
-    {
-        [JsonProperty("Type")]
-        public string Type { get; set; }
-
-        [JsonProperty("Name")]
-        public string Name { get; set; }
-
-        [JsonProperty("Params")]
-        public List<CppParam> Params { get; set; }
-
-        [JsonProperty("Private")]
-        public bool Private { get; set; }
-
-        [JsonProperty("Static")]
-        public bool Static { get; set; }
-
-        [JsonProperty("Const")]
-        public bool Const { get; set; }
-
-        [JsonProperty("Inline")]
-        public bool Inline { get; set; }
-
-        [JsonProperty("Body")]
-        public List<string> Body { get; set; }
-
-        [JsonProperty("Condition")]
-        public List<string> Condition { get; set; }
-    }
-
     public class CppStruct
     {
         [JsonProperty("Name")]
@@ -170,6 +161,9 @@ namespace LangPrint.Cpp
 
         [JsonProperty("Supers")]
         public List<string> Supers { get; set; }
+
+        [JsonProperty("IsClass")]
+        public bool IsClass { get; set; }
 
         [JsonProperty("TemplateParams")]
         public List<string> TemplateParams { get; set; }
@@ -181,14 +175,10 @@ namespace LangPrint.Cpp
         public List<CppVar> Vars { get; set; }
 
         [JsonProperty("Methods")]
-        public List<CppMethod> Methods { get; set; }
+        public List<CppFunction> Methods { get; set; }
 
         [JsonProperty("Condition")]
         public List<string> Condition { get; set; }
-    }
-
-    public class CppClass : CppStruct
-    {
     }
 
     public class CppModel : ILanguage
@@ -199,14 +189,14 @@ namespace LangPrint.Cpp
         [JsonProperty("Name")]
         public string Name { get; set; }
 
+        [JsonProperty("Includes")]
+        public List<string> Includes { get; set; }
+
         [JsonProperty("Pragmas")]
         public List<string> Pragmas { get; set; }
 
         [JsonProperty("HeadingComment")]
         public List<string> HeadingComment { get; set; }
-
-        [JsonProperty("Includes")]
-        public List<string> Includes { get; set; }
 
         [JsonProperty("Defines")]
         public List<CppDefine> Defines { get; set; }
@@ -223,22 +213,19 @@ namespace LangPrint.Cpp
         [JsonProperty("AfterNameSpace")]
         public string AfterNameSpace { get; set; }
 
-        [JsonProperty("ClassForwards")]
-        public List<string> ClassForwards { get; set; }
-
-        [JsonProperty("Constants")]
-        public List<CppConstant> Constants { get; set; }
+        [JsonProperty("Forwards")]
+        public List<string> Forwards { get; set; }
 
         [JsonProperty("Enums")]
         public List<CppEnum> Enums { get; set; }
+
+        [JsonProperty("Constants")]
+        public List<CppConstant> Constants { get; set; }
 
         [JsonProperty("Functions")]
         public List<CppFunction> Functions { get; set; }
 
         [JsonProperty("Structs")]
         public List<CppStruct> Structs { get; set; }
-
-        [JsonProperty("Classes")]
-        public List<CppClass> Classes { get; set; }
     }
 }
