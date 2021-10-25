@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Diagnostics;
 using Newtonsoft.Json;
 
 /*
@@ -10,6 +11,7 @@ using Newtonsoft.Json;
 
 namespace LangPrint.Cpp
 {
+    [DebuggerDisplay("{" + nameof(Name) + "}" + " {" + nameof(Value) + "}")]
     public class CppDefine
     {
         [JsonProperty("Name")]
@@ -17,8 +19,12 @@ namespace LangPrint.Cpp
 
         [JsonProperty("Value")]
         public string Value { get; set; }
+
+        [JsonProperty("Condition")]
+        public List<string> Condition { get; set; }
     }
 
+    [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
     public class CppConstant
     {
         [JsonProperty("Type")]
@@ -34,24 +40,7 @@ namespace LangPrint.Cpp
         public List<string> Condition { get; set; }
     }
 
-    public class CppVariable
-    {
-        [JsonProperty("Extern")]
-        public bool Extern { get; set; }
-
-        [JsonProperty("Type")]
-        public string Type { get; set; }
-
-        [JsonProperty("Name")]
-        public string Name { get; set; }
-
-        [JsonProperty("Value")]
-        public string Value { get; set; }
-
-        [JsonProperty("Condition")]
-        public List<string> Condition { get; set; }
-    }
-
+    [DebuggerDisplay("{" + nameof(Name) + "}" + " {" + nameof(Value) + "}")]
     public class CppValue
     {
         [JsonProperty("Name")]
@@ -61,6 +50,7 @@ namespace LangPrint.Cpp
         public string Value { get; set; }
     }
 
+    [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
     public class CppEnum
     {
         [JsonProperty("Name")]
@@ -79,6 +69,7 @@ namespace LangPrint.Cpp
         public List<string> Condition { get; set; }
     }
 
+    [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
     public class CppParam
     {
         [JsonProperty("Type")]
@@ -86,8 +77,12 @@ namespace LangPrint.Cpp
 
         [JsonProperty("Name")]
         public string Name { get; set; }
+
+        [JsonProperty("Condition")]
+        public List<string> Condition { get; set; }
     }
 
+    [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
     public class CppFunction
     {
         [JsonProperty("Type")]
@@ -118,7 +113,8 @@ namespace LangPrint.Cpp
         public List<string> Condition { get; set; }
     }
 
-    public class CppVar
+    [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
+    public class CppVariable
     {
         [JsonProperty("Type")]
         public string Type { get; set; }
@@ -138,6 +134,9 @@ namespace LangPrint.Cpp
         [JsonProperty("Private")]
         public bool Private { get; set; }
 
+        [JsonProperty("Extern")]
+        public bool Extern { get; set; }
+
         [JsonProperty("Static")]
         public bool Static { get; set; }
 
@@ -154,6 +153,7 @@ namespace LangPrint.Cpp
         public List<string> Condition { get; set; }
     }
 
+    [DebuggerDisplay("{" + nameof(Name) + "}")]
     public class CppStruct
     {
         [JsonProperty("Name")]
@@ -171,8 +171,8 @@ namespace LangPrint.Cpp
         [JsonProperty("Friends")]
         public List<string> Friends { get; set; }
 
-        [JsonProperty("Vars")]
-        public List<CppVar> Vars { get; set; }
+        [JsonProperty("Variables")]
+        public List<CppVariable> Variables { get; set; }
 
         [JsonProperty("Methods")]
         public List<CppFunction> Methods { get; set; }
@@ -222,10 +222,13 @@ namespace LangPrint.Cpp
         [JsonProperty("Constants")]
         public List<CppConstant> Constants { get; set; }
 
-        [JsonProperty("Functions")]
-        public List<CppFunction> Functions { get; set; }
-
         [JsonProperty("Structs")]
         public List<CppStruct> Structs { get; set; }
+
+        [JsonProperty("Variables")]
+        public List<CppVariable> Variables { get; set; }
+
+        [JsonProperty("Functions")]
+        public List<CppFunction> Functions { get; set; }
     }
 }
