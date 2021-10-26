@@ -322,19 +322,19 @@ namespace LangPrint.Cpp
             return sectionStr + Options.GetNewLineText() + Options.GetNewLineText();
         }
 
-        private string ProcessPragmas(List<string> pragmas, int baseIndentLvl)
+        private string ProcessPragmas(IEnumerable<string> pragmas, int baseIndentLvl)
         {
             string ret = Helper.JoinString(Options.GetNewLineText(), pragmas, $"{GetIndent(baseIndentLvl)}#pragma ");
             return FinalizeSection(ret);
         }
 
-        private string ProcessIncludes(List<string> includes, int baseIndentLvl)
+        private string ProcessIncludes(IEnumerable<string> includes, int baseIndentLvl)
         {
             string ret = Helper.JoinString(Options.GetNewLineText(), includes, $"{GetIndent(baseIndentLvl)}#include ");
             return FinalizeSection(ret);
         }
 
-        private string ProcessMultiComment(List<string> comments, int baseIndentLvl)
+        private string ProcessMultiComment(IEnumerable<string> comments, int baseIndentLvl)
         {
             string ret = $"{GetIndent(baseIndentLvl)}/*{Options.GetNewLineText()}" +
                    Helper.JoinString(Options.GetNewLineText(), comments, $"{GetIndent(baseIndentLvl)} * ") +
@@ -343,7 +343,7 @@ namespace LangPrint.Cpp
             return FinalizeSection(ret);
         }
 
-        private string ProcessDefines(List<CppDefine> defines, int baseIndentLvl)
+        private string ProcessDefines(IEnumerable<CppDefine> defines, int baseIndentLvl)
         {
             string ret = Helper.JoinString(
                 Options.GetNewLineText(),
@@ -353,7 +353,7 @@ namespace LangPrint.Cpp
             return FinalizeSection(ret);
         }
 
-        private string ProcessForwards(List<string> forwards, int baseIndentLvl)
+        private string ProcessForwards(IEnumerable<string> forwards, int baseIndentLvl)
         {
             string ret = Helper.JoinString(Options.GetNewLineText(), forwards, GetIndent(baseIndentLvl), ";");
             ret += Options.GetNewLineText();
@@ -361,7 +361,7 @@ namespace LangPrint.Cpp
             return FinalizeSection(ret);
         }
 
-        private string ProcessEnums(List<CppEnum> enums, int baseIndentLvl)
+        private string ProcessEnums(IEnumerable<CppEnum> enums, int baseIndentLvl)
         {
             List<CppEnum> vEnums = enums
                 .Where(e => !string.IsNullOrWhiteSpace(e.Name) && ResolveConditions(e.Condition))
@@ -378,7 +378,7 @@ namespace LangPrint.Cpp
             return FinalizeSection(ret);
         }
 
-        private string ProcessConstants(List<CppConstant> constants, int baseIndentLvl)
+        private string ProcessConstants(IEnumerable<CppConstant> constants, int baseIndentLvl)
         {
             List<string> values = constants
                 .Where(c => !string.IsNullOrWhiteSpace(c.Name) && !string.IsNullOrWhiteSpace(c.Type) && !string.IsNullOrWhiteSpace(c.Value) && ResolveConditions(c.Condition))
@@ -400,7 +400,7 @@ namespace LangPrint.Cpp
             return FinalizeSection(ret);
         }
 
-        private string ProcessStructs(List<CppStruct> structs, int baseIndentLvl)
+        private string ProcessStructs(IEnumerable<CppStruct> structs, int baseIndentLvl)
         {
             List<CppStruct> vStruct = structs
                 .Where(s => !string.IsNullOrWhiteSpace(s.Name) && ResolveConditions(s.Condition))
@@ -417,7 +417,7 @@ namespace LangPrint.Cpp
             return FinalizeSection(ret);
         }
 
-        private string ProcessVariables(List<CppVariable> variables, int baseIndentLvl)
+        private string ProcessVariables(IEnumerable<CppVariable> variables, int baseIndentLvl)
         {
             List<CppVariable> vars = variables
                 .Where(v => !string.IsNullOrWhiteSpace(v.Name) && !string.IsNullOrWhiteSpace(v.Type) && ResolveConditions(v.Condition))
@@ -434,7 +434,7 @@ namespace LangPrint.Cpp
             return FinalizeSection(ret);
         }
 
-        private string ProcessFunctions(List<CppFunction> functions, CppStruct parent, bool signatureOnly, int baseIndentLvl)
+        private string ProcessFunctions(IEnumerable<CppFunction> functions, CppStruct parent, bool signatureOnly, int baseIndentLvl)
         {
             List<CppFunction> funcs = functions
                 .Where(f => !string.IsNullOrWhiteSpace(f.Name) && !string.IsNullOrWhiteSpace(f.Type) && ResolveConditions(f.Condition))
@@ -489,17 +489,17 @@ namespace LangPrint.Cpp
             // Constants
             sb.Append(ProcessConstants(Model.Constants, indentLvl));
 
+            // Variables
+            sb.Append(ProcessVariables(Model.Variables, indentLvl));
+
+            // Global functions
+            sb.Append(ProcessFunctions(Model.Functions, null, true, indentLvl));
+
             // Enums
             sb.Append(ProcessEnums(Model.Enums, indentLvl));
 
             // Structs
             sb.Append(ProcessStructs(Model.Structs, indentLvl));
-
-            // Variables
-            sb.Append(ProcessVariables(Model.Variables, indentLvl));
-
-            // Functions
-            sb.Append(ProcessFunctions(Model.Functions, null, true, indentLvl));
 
             // Close NameSpace
             if (!string.IsNullOrWhiteSpace(Model.NameSpace))
@@ -545,7 +545,7 @@ namespace LangPrint.Cpp
                 indentLvl++;
             }
 
-            // Functions
+            // Global functions
             sb.Append(ProcessFunctions(Model.Functions, null, false, indentLvl));
 
             // Static variables
@@ -605,6 +605,49 @@ namespace LangPrint.Cpp
             int indentLvl = 0;
             var sb = new StringBuilder();
 
+            // Pragma
+            sb.Append($"#pragma once{Options.GetNewLineText()}");
+            sb.Append(Options.GetNewLineText());
+
+            // HeadingComment
+            sb.Append(ProcessMultiComment(Model.HeadingComment, indentLvl));
+
+            // BeforeNameSpace
+            if (!string.IsNullOrWhiteSpace(Model.BeforeNameSpace))
+            {
+                sb.Append(Model.BeforeNameSpace + Options.GetNewLineText());
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // NameSpace
+            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
+            {
+                sb.Append(GetIndent(indentLvl));
+                sb.Append($"namespace {Model.NameSpace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
+                indentLvl++;
+            }
+
+            // Enums
+            sb.Append(ProcessEnums(Model.Enums, indentLvl));
+
+            // Structs
+            sb.Append(ProcessStructs(Model.Structs.Where(s => !s.IsClass), indentLvl));
+
+            // Close NameSpace
+            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
+            {
+                indentLvl--;
+                sb.Append($"{GetIndent(indentLvl)}}}{Options.GetNewLineText()}");
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // AfterNameSpace
+            if (!string.IsNullOrWhiteSpace(Model.AfterNameSpace))
+            {
+                sb.AppendLine(Model.AfterNameSpace);
+                sb.Append(Options.GetNewLineText());
+            }
+
             return sb.ToString();
         }
 
@@ -613,24 +656,92 @@ namespace LangPrint.Cpp
             int indentLvl = 0;
             var sb = new StringBuilder();
 
+            // Pragma
+            sb.Append($"#pragma once{Options.GetNewLineText()}");
+            sb.Append(Options.GetNewLineText());
+
+            // HeadingComment
+            sb.Append(ProcessMultiComment(Model.HeadingComment, indentLvl));
+
+            // BeforeNameSpace
+            if (!string.IsNullOrWhiteSpace(Model.BeforeNameSpace))
+            {
+                sb.Append(Model.BeforeNameSpace + Options.GetNewLineText());
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // NameSpace
+            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
+            {
+                sb.Append(GetIndent(indentLvl));
+                sb.Append($"namespace {Model.NameSpace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
+                indentLvl++;
+            }
+
+            // Structs
+            sb.Append(ProcessStructs(Model.Structs.Where(s => s.IsClass), indentLvl));
+
+            // Close NameSpace
+            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
+            {
+                indentLvl--;
+                sb.Append($"{GetIndent(indentLvl)}}}{Options.GetNewLineText()}");
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // AfterNameSpace
+            if (!string.IsNullOrWhiteSpace(Model.AfterNameSpace))
+            {
+                sb.AppendLine(Model.AfterNameSpace);
+                sb.Append(Options.GetNewLineText());
+            }
+
             return sb.ToString();
         }
 
         private string GeneratePackageFile()
         {
+            int indentLvl = 0;
             var sb = new StringBuilder();
 
             // Pragmas
-            sb.Append(ProcessPragmas(Model.Pragmas, 0));
+            sb.Append(ProcessPragmas(Model.Pragmas, indentLvl));
 
             // HeadingComment
-            sb.Append(ProcessMultiComment(Model.HeadingComment, 0));
+            sb.Append(ProcessMultiComment(Model.HeadingComment, indentLvl));
 
             // Includes
-            sb.Append(ProcessIncludes(Model.Includes, 0));
+            sb.Append(ProcessIncludes(Model.Includes, indentLvl));
 
             // Defines
-            sb.Append(ProcessDefines(Model.Defines, 0));
+            sb.Append(ProcessDefines(Model.Defines, indentLvl));
+
+            // BeforeNameSpace
+            if (!string.IsNullOrWhiteSpace(Model.BeforeNameSpace))
+            {
+                sb.Append(Model.BeforeNameSpace + Options.GetNewLineText());
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // NameSpace
+            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
+            {
+                sb.Append(GetIndent(indentLvl));
+                sb.Append($"namespace {Model.NameSpace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
+                indentLvl++;
+            }
+
+            // Forwards
+            sb.Append(ProcessForwards(Model.Forwards, indentLvl));
+
+            // Constants
+            sb.Append(ProcessConstants(Model.Constants, indentLvl));
+
+            // Variables
+            sb.Append(ProcessVariables(Model.Variables, indentLvl));
+
+            // Global functions
+            sb.Append(ProcessFunctions(Model.Functions, null, true, indentLvl));
 
             // Package include
             var packHeaders = new List<string>()
@@ -638,7 +749,24 @@ namespace LangPrint.Cpp
                 $"{Model.Name}_Structs.h",
                 $"{Model.Name}_Classes.h"
             };
-            sb.Append(Helper.JoinString(Options.GetNewLineText(), packHeaders, "#include \"", "\""));
+            sb.Append(GetSectionHeading("Structs & Classes", indentLvl));
+            sb.Append(Helper.JoinString(Options.GetNewLineText(), packHeaders, $"{GetIndent(indentLvl)}#include \"", "\""));
+            sb.Append(Options.GetNewLineText());
+
+            // Close NameSpace
+            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
+            {
+                indentLvl--;
+                sb.Append($"{GetIndent(indentLvl)}}}{Options.GetNewLineText()}");
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // AfterNameSpace
+            if (!string.IsNullOrWhiteSpace(Model.AfterNameSpace))
+            {
+                sb.AppendLine(Model.AfterNameSpace);
+                sb.Append(Options.GetNewLineText());
+            }
 
             return sb.ToString();
         }
@@ -647,6 +775,81 @@ namespace LangPrint.Cpp
         {
             int indentLvl = 0;
             var sb = new StringBuilder();
+
+            // HeadingComment
+            sb.Append(ProcessMultiComment(Model.HeadingComment, indentLvl));
+
+            // Includes
+            sb.Append(ProcessIncludes(Model.CppIncludes, indentLvl));
+            sb.Append($"#include \"{Model.Name}_Package.h\"{Options.GetNewLineText()}");
+            sb.Append(Options.GetNewLineText());
+
+            // BeforeNameSpace
+            if (!string.IsNullOrWhiteSpace(Model.CppBeforeNameSpace))
+            {
+                sb.Append(Model.CppBeforeNameSpace + Options.GetNewLineText());
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // NameSpace
+            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
+            {
+                sb.Append(GetIndent(indentLvl));
+                sb.Append($"namespace {Model.NameSpace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
+                indentLvl++;
+            }
+
+            // Global functions
+            sb.Append(ProcessFunctions(Model.Functions, null, false, indentLvl));
+
+            // Static variables
+            if (Model.Structs.Any(s => s.Variables.Any(v => v.Static)))
+            {
+                var methodsStr = new List<string>();
+                sb.Append(GetSectionHeading("Structs Static Variables", indentLvl));
+
+                foreach (CppStruct @struct in Model.Structs)
+                {
+                    IEnumerable<string> variables = @struct.Variables
+                        .Where(v => v.Static && !v.Const && !v.Constexpr)
+                        .Select(v => GetVariableString(v, @struct, true));
+
+                    methodsStr.AddRange(variables);
+                }
+
+                sb.Append(Helper.JoinString(Options.GetNewLineText(), methodsStr, GetIndent(indentLvl)));
+                sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
+            }
+
+            // Structs functions
+            if (Model.Structs.Any(s => s.Methods.Count > 0))
+            {
+                var methodsStr = new List<string>();
+                sb.Append(GetSectionHeading("Structs Functions", indentLvl));
+
+                foreach (CppStruct @struct in Model.Structs)
+                {
+                    methodsStr.AddRange(@struct.Methods.Select(structMethod => GetFunctionString(structMethod, @struct, false, indentLvl)));
+                }
+
+                sb.Append(string.Join(Options.GetNewLineText(), methodsStr));
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // Close NameSpace
+            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
+            {
+                indentLvl--;
+                sb.Append($"{GetIndent(indentLvl)}}}{Options.GetNewLineText()}");
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // AfterNameSpace
+            if (!string.IsNullOrWhiteSpace(Model.CppAfterNameSpace))
+            {
+                sb.AppendLine(Model.CppAfterNameSpace);
+                sb.Append(Options.GetNewLineText());
+            }
 
             return sb.ToString();
         }
@@ -670,7 +873,7 @@ namespace LangPrint.Cpp
 
             var ret = new Dictionary<string, string>();
 
-            if (!Options.GeneratePackageStyle)
+            if (!Options.GeneratePackageSyntax)
             {
                 ret.Add($"{Model.Name}.h", GenerateHeaderFile());
                 ret.Add($"{Model.Name}.cpp", GenerateCppFile());
@@ -681,7 +884,7 @@ namespace LangPrint.Cpp
             ret.Add($"{Model.Name}_Structs.h", GenerateStructsFile());
             ret.Add($"{Model.Name}_Classes.h", GenerateClassesFile());
             ret.Add($"{Model.Name}_Package.h", GeneratePackageFile());
-            ret.Add($"{Model.Name}_Functions.cpp", GenerateFunctionsFile());
+            ret.Add($"{Model.Name}_Package.cpp", GenerateFunctionsFile());
 
             return ret;
         }

@@ -18,13 +18,13 @@ namespace LangPrint.Tests
         }
 
         [Fact]
-        public void Test1()
+        public void Test_OneFileGenerate()
         {
             string file = File.ReadAllText(@"D:\Projects\CheatGear\src\CheatGear\Settings\Engines\UnrealEngine\Packages\BasicTypes.json");
 
             var cppOpts = new CppLangOptions()
             {
-                GeneratePackageStyle = true,
+                GeneratePackageSyntax = false,
                 PrintSectionName = true
             };
 
@@ -32,9 +32,39 @@ namespace LangPrint.Tests
             cpp.Process(file, cppOpts);
 
             Dictionary<string, string> cppGen = cpp.Generate();
-            string genStr = cppGen.ElementAt(1).Value;
+            string savePath = Path.Combine(Environment.CurrentDirectory, "Test_OneFileGenerate");
+            if (!Directory.Exists(savePath))
+                Directory.CreateDirectory(savePath);
 
-            _testOutputHelper.WriteLine(genStr);
+            foreach ((string fileName, string fileContent) in cppGen)
+            {
+                File.WriteAllText(Path.Combine(savePath, fileName), fileContent);
+            }
+        }
+
+        [Fact]
+        public void Test_PackageSyntaxGenerate()
+        {
+            string file = File.ReadAllText(@"D:\Projects\CheatGear\src\CheatGear\Settings\Engines\UnrealEngine\Packages\BasicTypes.json");
+
+            var cppOpts = new CppLangOptions()
+            {
+                GeneratePackageSyntax = true,
+                PrintSectionName = true
+            };
+
+            var cpp = new CppProcessor();
+            cpp.Process(file, cppOpts);
+
+            Dictionary<string, string> cppGen = cpp.Generate();
+            string savePath = Path.Combine(Environment.CurrentDirectory, "Test_PackageSyntaxGenerate");
+            if (!Directory.Exists(savePath))
+                Directory.CreateDirectory(savePath);
+
+            foreach ((string fileName, string fileContent) in cppGen)
+            {
+                File.WriteAllText(Path.Combine(savePath, fileName), fileContent);
+            }
         }
     }
 }
