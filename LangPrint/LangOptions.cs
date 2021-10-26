@@ -15,8 +15,8 @@ namespace LangPrint
     public class LangOptions
     {
         public NewLineType NewLine { get; init; } = NewLineType.CRLF;
+        public bool GeneratePackageStyle { get; init; } = false;
         public bool PrintSectionName { get; init; } = true;
-        //public int IndentSize { get; init; } = 4;
 
         public string GetNewLineText()
         {

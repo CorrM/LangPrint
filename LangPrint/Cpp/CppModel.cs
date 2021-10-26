@@ -41,7 +41,7 @@ namespace LangPrint.Cpp
     }
 
     [DebuggerDisplay("{" + nameof(Name) + "}" + " {" + nameof(Value) + "}")]
-    public class CppValue
+    public class CppNameValue
     {
         [JsonProperty("Name")]
         public string Name { get; set; }
@@ -63,7 +63,7 @@ namespace LangPrint.Cpp
         public bool IsClass { get; set; }
 
         [JsonProperty("Values")]
-        public List<CppValue> Values { get; set; }
+        public List<CppNameValue> Values { get; set; }
 
         [JsonProperty("Condition")]
         public List<string> Condition { get; set; }
@@ -189,11 +189,14 @@ namespace LangPrint.Cpp
         [JsonProperty("Name")]
         public string Name { get; set; }
 
+        [JsonProperty("Pragmas")]
+        public List<string> Pragmas { get; set; }
+
         [JsonProperty("Includes")]
         public List<string> Includes { get; set; }
 
-        [JsonProperty("Pragmas")]
-        public List<string> Pragmas { get; set; }
+        [JsonProperty("CppIncludes")]
+        public List<string> CppIncludes { get; set; }
 
         [JsonProperty("HeadingComment")]
         public List<string> HeadingComment { get; set; }
@@ -212,6 +215,12 @@ namespace LangPrint.Cpp
 
         [JsonProperty("AfterNameSpace")]
         public string AfterNameSpace { get; set; }
+
+        [JsonProperty("CppBeforeNameSpace")]
+        public string CppBeforeNameSpace { get; set; }
+
+        [JsonProperty("CppAfterNameSpace")]
+        public string CppAfterNameSpace { get; set; }
 
         [JsonProperty("Forwards")]
         public List<string> Forwards { get; set; }

@@ -22,11 +22,17 @@ namespace LangPrint.Tests
         {
             string file = File.ReadAllText(@"D:\Projects\CheatGear\src\CheatGear\Settings\Engines\UnrealEngine\Packages\BasicTypes.json");
 
+            var cppOpts = new CppLangOptions()
+            {
+                GeneratePackageStyle = true,
+                PrintSectionName = true
+            };
+
             var cpp = new CppProcessor();
-            cpp.Process(file);
+            cpp.Process(file, cppOpts);
 
             Dictionary<string, string> cppGen = cpp.Generate();
-            string genStr = cppGen.ElementAt(0).Value;
+            string genStr = cppGen.ElementAt(1).Value;
 
             _testOutputHelper.WriteLine(genStr);
         }
