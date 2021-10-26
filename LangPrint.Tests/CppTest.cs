@@ -40,6 +40,8 @@ namespace LangPrint.Tests
             {
                 File.WriteAllText(Path.Combine(savePath, fileName), fileContent);
             }
+
+            _testOutputHelper.WriteLine(cppGen.ElementAt(0).Value);
         }
 
         [Fact]

@@ -20,6 +20,9 @@ namespace LangPrint.Cpp
         [JsonProperty("Value")]
         public string Value { get; set; }
 
+        [JsonProperty("Comment")]
+        public List<string> Comment { get; set; }
+
         [JsonProperty("Condition")]
         public List<string> Condition { get; set; }
     }
@@ -36,6 +39,9 @@ namespace LangPrint.Cpp
         [JsonProperty("Value")]
         public string Value { get; set; }
 
+        [JsonProperty("Comment")]
+        public List<string> Comment { get; set; }
+
         [JsonProperty("Condition")]
         public List<string> Condition { get; set; }
     }
@@ -48,6 +54,9 @@ namespace LangPrint.Cpp
 
         [JsonProperty("Value")]
         public string Value { get; set; }
+
+        [JsonProperty("Comment")]
+        public List<string> Comment { get; set; }
     }
 
     [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
@@ -64,6 +73,9 @@ namespace LangPrint.Cpp
 
         [JsonProperty("Values")]
         public List<CppNameValue> Values { get; set; }
+
+        [JsonProperty("Comment")]
+        public List<string> Comment { get; set; }
 
         [JsonProperty("Condition")]
         public List<string> Condition { get; set; }
@@ -109,6 +121,9 @@ namespace LangPrint.Cpp
         [JsonProperty("Body")]
         public List<string> Body { get; set; }
 
+        [JsonProperty("Comment")]
+        public List<string> Comment { get; set; }
+
         [JsonProperty("Condition")]
         public List<string> Condition { get; set; }
     }
@@ -149,6 +164,9 @@ namespace LangPrint.Cpp
         [JsonProperty("Union")]
         public bool Union { get; set; }
 
+        [JsonProperty("Comment")]
+        public List<string> Comment { get; set; }
+
         [JsonProperty("Condition")]
         public List<string> Condition { get; set; }
     }
@@ -176,6 +194,9 @@ namespace LangPrint.Cpp
 
         [JsonProperty("Methods")]
         public List<CppFunction> Methods { get; set; }
+
+        [JsonProperty("Comment")]
+        public List<string> Comment { get; set; }
 
         [JsonProperty("Condition")]
         public List<string> Condition { get; set; }

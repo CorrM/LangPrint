@@ -98,9 +98,30 @@ namespace LangPrint.Cpp
                    GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText();
         }
 
+        private string GetMultiCommentString(IEnumerable<string> comments, int baseIndentLvl, bool finalizeReturn = true)
+        {
+            if (comments is null)
+                return string.Empty;
+
+            IEnumerable<string> eComments = comments.ToList();
+            if (!eComments.Any())
+                return string.Empty;
+
+            string ret = $"{GetIndent(baseIndentLvl)}/**{Options.GetNewLineText()}" +
+                         Helper.JoinString(Options.GetNewLineText(), eComments, $"{GetIndent(baseIndentLvl)} * ") +
+                         $"{Options.GetNewLineText()}{GetIndent(baseIndentLvl)} */";
+
+            return finalizeReturn
+                ? FinalizeSection(ret)
+                : ret + Options.GetNewLineText();
+        }
+
         private string GetEnumString(CppEnum @enum, int baseIndentLvl)
         {
             var sb = new StringBuilder();
+
+            // Comment
+            sb.Append(GetMultiCommentString(@enum.Comment, baseIndentLvl, false));
 
             // Name
             sb.Append(@enum.IsClass
@@ -137,6 +158,10 @@ namespace LangPrint.Cpp
         private string GetFunctionString(CppFunction func, CppStruct parent, bool signature, int baseIndentLvl)
         {
             var sb = new StringBuilder();
+
+            // Comment
+            sb.Append(GetMultiCommentString(func.Comment, baseIndentLvl, false));
+
             sb.Append(GetIndent(baseIndentLvl));
 
             // Static
@@ -187,6 +212,9 @@ namespace LangPrint.Cpp
         private string GetStructString(CppStruct @struct, int baseIndentLvl)
         {
             var sb = new StringBuilder();
+
+            // Comment
+            sb.Append(GetMultiCommentString(@struct.Comment, baseIndentLvl, false));
 
             // Template
             if (@struct.TemplateParams.Count > 0)
@@ -334,15 +362,6 @@ namespace LangPrint.Cpp
             return FinalizeSection(ret);
         }
 
-        private string ProcessMultiComment(IEnumerable<string> comments, int baseIndentLvl)
-        {
-            string ret = $"{GetIndent(baseIndentLvl)}/*{Options.GetNewLineText()}" +
-                   Helper.JoinString(Options.GetNewLineText(), comments, $"{GetIndent(baseIndentLvl)} * ") +
-                   $"{GetIndent(baseIndentLvl)}{Options.GetNewLineText()} */";
-
-            return FinalizeSection(ret);
-        }
-
         private string ProcessDefines(IEnumerable<CppDefine> defines, int baseIndentLvl)
         {
             string ret = Helper.JoinString(
@@ -460,7 +479,7 @@ namespace LangPrint.Cpp
             sb.Append(ProcessPragmas(Model.Pragmas, indentLvl));
 
             // HeadingComment
-            sb.Append(ProcessMultiComment(Model.HeadingComment, indentLvl));
+            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
 
             // Includes
             sb.Append(ProcessIncludes(Model.Includes, indentLvl));
@@ -525,7 +544,7 @@ namespace LangPrint.Cpp
             var sb = new StringBuilder();
 
             // HeadingComment
-            sb.Append(ProcessMultiComment(Model.HeadingComment, indentLvl));
+            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
 
             // Includes
             sb.Append(ProcessIncludes(Model.CppIncludes, indentLvl));
@@ -610,7 +629,7 @@ namespace LangPrint.Cpp
             sb.Append(Options.GetNewLineText());
 
             // HeadingComment
-            sb.Append(ProcessMultiComment(Model.HeadingComment, indentLvl));
+            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
 
             // BeforeNameSpace
             if (!string.IsNullOrWhiteSpace(Model.BeforeNameSpace))
@@ -661,7 +680,7 @@ namespace LangPrint.Cpp
             sb.Append(Options.GetNewLineText());
 
             // HeadingComment
-            sb.Append(ProcessMultiComment(Model.HeadingComment, indentLvl));
+            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
 
             // BeforeNameSpace
             if (!string.IsNullOrWhiteSpace(Model.BeforeNameSpace))
@@ -708,7 +727,7 @@ namespace LangPrint.Cpp
             sb.Append(ProcessPragmas(Model.Pragmas, indentLvl));
 
             // HeadingComment
-            sb.Append(ProcessMultiComment(Model.HeadingComment, indentLvl));
+            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
 
             // Includes
             sb.Append(ProcessIncludes(Model.Includes, indentLvl));
@@ -777,7 +796,7 @@ namespace LangPrint.Cpp
             var sb = new StringBuilder();
 
             // HeadingComment
-            sb.Append(ProcessMultiComment(Model.HeadingComment, indentLvl));
+            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
 
             // Includes
             sb.Append(ProcessIncludes(Model.CppIncludes, indentLvl));
