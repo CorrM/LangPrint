@@ -29,9 +29,9 @@ namespace LangPrint.Tests
             };
 
             var cpp = new CppProcessor();
-            cpp.Process(file, cppOpts);
+            cpp.Init(file, cppOpts);
 
-            Dictionary<string, string> cppGen = cpp.Generate();
+            Dictionary<string, string> cppGen = cpp.GenerateFiles();
             string savePath = Path.Combine(Environment.CurrentDirectory, "Test_OneFileGenerate");
             if (!Directory.Exists(savePath))
                 Directory.CreateDirectory(savePath);
@@ -56,9 +56,9 @@ namespace LangPrint.Tests
             };
 
             var cpp = new CppProcessor();
-            cpp.Process(file, cppOpts);
+            cpp.Init(file, cppOpts);
 
-            Dictionary<string, string> cppGen = cpp.Generate();
+            Dictionary<string, string> cppGen = cpp.GenerateFiles();
             string savePath = Path.Combine(Environment.CurrentDirectory, "Test_PackageSyntaxGenerate");
             if (!Directory.Exists(savePath))
                 Directory.CreateDirectory(savePath);

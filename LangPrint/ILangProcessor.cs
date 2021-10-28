@@ -7,8 +7,8 @@ namespace LangPrint
         LangOptions Options { get; }
         TModel Model { get; }
 
-        void Process(TModel model, TOptions options);
-        void Process(string jsonData, TOptions options);
-        Dictionary<string, string> Generate();
+        void Init(TModel model, TOptions options);
+        void Init(string jsonData, TOptions options);
+        Dictionary<string, string> GenerateFiles();
     }
 }

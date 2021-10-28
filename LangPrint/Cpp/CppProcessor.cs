@@ -12,21 +12,320 @@ namespace LangPrint.Cpp
         public LangOptions Options { get; private set; }
         public CppModel Model { get; private set; }
 
-        private static string GetIndent(int lvl)
+        private string GenerateHeaderFile()
         {
-            return lvl <= 0
-                ? string.Empty
-                : string.Concat(Enumerable.Repeat("\t", lvl));
-            //: string.Concat(Enumerable.Repeat(new string(' ', Options.IndentSize), lvl));
+            var sb = new StringBuilder();
+
+            // File header
+            sb.Append(GetFileHeader(Model.Pragmas, Model.Includes, Model.Defines, Model.BeforeNameSpace, out int indentLvl));
+
+            // Forwards
+            sb.Append(ProcessForwards(Model.Forwards, indentLvl));
+
+            // Constants
+            sb.Append(ProcessConstants(Model.Constants, indentLvl));
+
+            // Variables
+            sb.Append(ProcessVariables(Model.Variables, indentLvl));
+
+            // Global functions
+            sb.Append(ProcessFunctions(Model.Functions, null, true, indentLvl));
+
+            // Enums
+            sb.Append(ProcessEnums(Model.Enums, indentLvl));
+
+            // Structs
+            sb.Append(ProcessStructs(Model.Structs, indentLvl));
+
+            // File footer
+            sb.Append(GetFileFooter(Model.AfterNameSpace, ref indentLvl));
+
+            return sb.ToString();
         }
 
-        private static string GetParamString(CppParam param)
+        private string GenerateCppFile()
         {
+            var sb = new StringBuilder();
+
+            // File header
+            List<string> includes = Model.CppIncludes.Append($"\"{Model.Name}.h\"").ToList();
+            sb.Append(GetFileHeader(null, includes, null, Model.CppBeforeNameSpace, out int indentLvl));
+
+            // Global functions
+            sb.Append(ProcessFunctions(Model.Functions, null, false, indentLvl));
+
+            // Static variables
+            if (Model.Structs.Any(s => s.Variables.Any(v => v.Static)))
+            {
+                var methodsStr = new List<string>();
+                sb.Append(GetSectionHeading("Structs Static Variables", indentLvl));
+
+                foreach (CppStruct @struct in Model.Structs)
+                {
+                    IEnumerable<string> variables = @struct.Variables
+                        .Where(v => v.Static && !v.Const && !v.Constexpr)
+                        .Select(v => GetVariableString(v, @struct, true));
+
+                    methodsStr.AddRange(variables);
+                }
+
+                sb.Append(Helper.JoinString(Options.GetNewLineText(), methodsStr, Helper.GetIndent(indentLvl)));
+                sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
+            }
+
+            // Structs functions
+            if (Model.Structs.Any(s => s.Methods.Count > 0))
+            {
+                var methodsStr = new List<string>();
+                sb.Append(GetSectionHeading("Structs Functions", indentLvl));
+
+                foreach (CppStruct @struct in Model.Structs)
+                {
+                    methodsStr.AddRange(@struct.Methods.Select(structMethod => GetFunctionString(structMethod, @struct, false, indentLvl)));
+                }
+
+                sb.Append(string.Join(Options.GetNewLineText(), methodsStr));
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // File footer
+            sb.Append(GetFileFooter(Model.CppAfterNameSpace, ref indentLvl));
+
+            return sb.ToString();
+        }
+
+        private string GenerateStructsFile()
+        {
+            var sb = new StringBuilder();
+
+            var pragmas = new List<string>()
+            {
+                "once"
+            };
+
+            // File header
+            sb.Append(GetFileHeader(pragmas, null, null, Model.BeforeNameSpace, out int indentLvl));
+
+            // Enums
+            sb.Append(ProcessEnums(Model.Enums, indentLvl));
+
+            // Structs
+            sb.Append(ProcessStructs(Model.Structs.Where(s => !s.IsClass), indentLvl));
+
+            // File footer
+            sb.Append(GetFileFooter(Model.AfterNameSpace, ref indentLvl));
+
+            return sb.ToString();
+        }
+
+        private string GenerateClassesFile()
+        {
+            var sb = new StringBuilder();
+
+            var pragmas = new List<string>()
+            {
+                "once"
+            };
+
+            // File header
+            sb.Append(GetFileHeader(pragmas, null, null, Model.BeforeNameSpace, out int indentLvl));
+
+            // Structs
+            sb.Append(ProcessStructs(Model.Structs.Where(s => s.IsClass), indentLvl));
+
+            // File footer
+            sb.Append(GetFileFooter(Model.AfterNameSpace, ref indentLvl));
+
+            return sb.ToString();
+        }
+
+        private string GeneratePackageFile()
+        {
+            var sb = new StringBuilder();
+
+            // File header
+            sb.Append(GetFileHeader(Model.Pragmas, Model.Includes, Model.Defines, Model.BeforeNameSpace, out int indentLvl));
+
+            // Forwards
+            sb.Append(ProcessForwards(Model.Forwards, indentLvl));
+
+            // Constants
+            sb.Append(ProcessConstants(Model.Constants, indentLvl));
+
+            // Variables
+            sb.Append(ProcessVariables(Model.Variables, indentLvl));
+
+            // Global functions
+            sb.Append(ProcessFunctions(Model.Functions, null, true, indentLvl));
+
+            // Package include
+            var packHeaders = new List<string>()
+            {
+                $"{Model.Name}_Structs.h",
+                $"{Model.Name}_Classes.h"
+            };
+            sb.Append(GetSectionHeading("Structs & Classes", indentLvl));
+            sb.Append(Helper.JoinString(Options.GetNewLineText(), packHeaders, $"{Helper.GetIndent(indentLvl)}#include \"", "\""));
+            sb.Append(Options.GetNewLineText());
+
+            // File footer
+            sb.Append(GetFileFooter(Model.AfterNameSpace, ref indentLvl));
+
+            return sb.ToString();
+        }
+
+        private string GenerateFunctionsFile()
+        {
+            var sb = new StringBuilder();
+
+            var includes = new List<string>(Model.CppIncludes)
+            {
+                $"\"{Model.Name}_Package.h\""
+            };
+
+            // File header
+            sb.Append(GetFileHeader(null, includes, null, Model.CppBeforeNameSpace, out int indentLvl));
+
+            // Global functions
+            sb.Append(ProcessFunctions(Model.Functions, null, false, indentLvl));
+
+            // Static variables
+            if (Model.Structs.Any(s => s.Variables.Any(v => v.Static)))
+            {
+                var methodsStr = new List<string>();
+                sb.Append(GetSectionHeading("Structs Static Variables", indentLvl));
+
+                foreach (CppStruct @struct in Model.Structs)
+                {
+                    IEnumerable<string> variables = @struct.Variables
+                        .Where(v => v.Static && !v.Const && !v.Constexpr)
+                        .Select(v => GetVariableString(v, @struct, true));
+
+                    methodsStr.AddRange(variables);
+                }
+
+                sb.Append(Helper.JoinString(Options.GetNewLineText(), methodsStr, Helper.GetIndent(indentLvl)));
+                sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
+            }
+
+            // Structs functions
+            if (Model.Structs.Any(s => s.Methods.Count > 0))
+            {
+                var methodsStr = new List<string>();
+                sb.Append(GetSectionHeading("Structs Functions", indentLvl));
+
+                foreach (CppStruct @struct in Model.Structs)
+                {
+                    methodsStr.AddRange(@struct.Methods.Select(structMethod => GetFunctionString(structMethod, @struct, false, indentLvl)));
+                }
+
+                sb.Append(string.Join(Options.GetNewLineText(), methodsStr));
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // File footer
+            sb.Append(GetFileFooter(Model.CppAfterNameSpace, ref indentLvl));
+
+            return sb.ToString();
+        }
+
+        public bool ResolveConditions(List<string> conditions)
+        {
+            if (conditions is null || conditions.Count == 0)
+                return true;
+
+            // ! conditions
+            foreach (string condition in conditions.Where(c => !string.IsNullOrWhiteSpace(c) && c.StartsWith("!")))
+            {
+                if (Model.Conditions.Any(gCondition => condition[1..] == gCondition))
+                    return false;
+            }
+
+            // All conditions must to be fitted
+            return conditions
+                .Where(c => !string.IsNullOrWhiteSpace(c) && !c.StartsWith("!"))
+                .All(c => Model.Conditions.Contains(c));
+        }
+
+        public string GetFileHeader(List<string> pragmas, List<string> includes, List<CppDefine> defines, string beforeNameSpace, out int indentLvl)
+        {
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
+
+            indentLvl = 0;
+            var sb = new StringBuilder();
+
+            // Pragmas
+            if (pragmas?.Count > 0)
+                sb.Append(ProcessPragmas(pragmas, indentLvl));
+
+            // HeadingComment
+            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
+
+            // Includes
+            if (includes?.Count > 0)
+                sb.Append(ProcessIncludes(includes, indentLvl));
+
+            // Defines
+            if (defines?.Count > 0)
+                sb.Append(ProcessDefines(defines, indentLvl));
+
+            // BeforeNameSpace
+            if (!string.IsNullOrWhiteSpace(beforeNameSpace))
+            {
+                sb.Append(beforeNameSpace + Options.GetNewLineText());
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // NameSpace
+            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
+            {
+                sb.Append(Helper.GetIndent(indentLvl));
+                sb.Append($"namespace {Model.NameSpace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
+                indentLvl++;
+            }
+
+            return sb.ToString();
+        }
+
+        public string GetFileFooter(string afterNameSpace, ref int indentLvl)
+        {
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
+
+            var sb = new StringBuilder();
+
+            // Close NameSpace
+            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
+            {
+                indentLvl--;
+                sb.Append($"{Helper.GetIndent(indentLvl)}}}{Options.GetNewLineText()}");
+                sb.Append(Options.GetNewLineText());
+            }
+
+            // AfterNameSpace
+            if (!string.IsNullOrWhiteSpace(afterNameSpace))
+            {
+                sb.AppendLine(afterNameSpace);
+                sb.Append(Options.GetNewLineText());
+            }
+
+            return sb.ToString();
+        }
+
+        public string GetParamString(CppParam param)
+        {
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
+
             return $"{param.Type} {param.Name}";
         }
 
-        private static string GetVariableString(CppVariable variable, CppStruct parent = null, bool definition = false)
+        public string GetVariableString(CppVariable variable, CppStruct parent = null, bool definition = false)
         {
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
+
             var sb = new StringBuilder();
 
             // Extern
@@ -71,35 +370,23 @@ namespace LangPrint.Cpp
             return sb.ToString();
         }
 
-        private bool ResolveConditions(List<string> conditions)
+        public string GetSectionHeading(string name, int indentLvl)
         {
-            if (conditions is null || conditions.Count == 0)
-                return true;
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
 
-            // ! conditions
-            foreach (string condition in conditions.Where(c => !string.IsNullOrWhiteSpace(c) && c.StartsWith("!")))
-            {
-                if (Model.Conditions.Any(gCondition => condition[1..] == gCondition))
-                    return false;
-            }
-
-            // All conditions must to be fitted
-            return conditions
-                .Where(c => !string.IsNullOrWhiteSpace(c) && !c.StartsWith("!"))
-                .All(c => Model.Conditions.Contains(c));
-        }
-
-        private string GetSectionHeading(string name, int indentLvl)
-        {
             string headLine = string.Concat(Enumerable.Repeat("=", 50));
 
-            return GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText() +
-                   GetIndent(indentLvl) + "// " + "# " + name + Options.GetNewLineText() +
-                   GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText();
+            return Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText() +
+                   Helper.GetIndent(indentLvl) + "// " + "# " + name + Options.GetNewLineText() +
+                   Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText();
         }
 
-        private string GetMultiCommentString(IEnumerable<string> comments, int baseIndentLvl, bool finalizeReturn = true)
+        public string GetMultiCommentString(IEnumerable<string> comments, int baseIndentLvl, bool finalizeReturn = true)
         {
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
+
             if (comments is null)
                 return string.Empty;
 
@@ -107,17 +394,20 @@ namespace LangPrint.Cpp
             if (!eComments.Any())
                 return string.Empty;
 
-            string ret = $"{GetIndent(baseIndentLvl)}/**{Options.GetNewLineText()}" +
-                         Helper.JoinString(Options.GetNewLineText(), eComments, $"{GetIndent(baseIndentLvl)} * ") +
-                         $"{Options.GetNewLineText()}{GetIndent(baseIndentLvl)} */";
+            string ret = $"{Helper.GetIndent(baseIndentLvl)}/**{Options.GetNewLineText()}" +
+                         Helper.JoinString(Options.GetNewLineText(), eComments, $"{Helper.GetIndent(baseIndentLvl)} * ") +
+                         $"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)} */";
 
             return finalizeReturn
-                ? FinalizeSection(ret)
+                ? Helper.FinalizeSection(ret, Options.GetNewLineText())
                 : ret + Options.GetNewLineText();
         }
 
-        private string GetEnumString(CppEnum @enum, int baseIndentLvl)
+        public string GetEnumString(CppEnum @enum, int baseIndentLvl)
         {
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
+
             var sb = new StringBuilder();
 
             // Comment
@@ -125,8 +415,8 @@ namespace LangPrint.Cpp
 
             // Name
             sb.Append(@enum.IsClass
-                ? $"{GetIndent(baseIndentLvl)}enum class {@enum.Name}"
-                : $"{GetIndent(baseIndentLvl)}enum {@enum.Name}");
+                ? $"{Helper.GetIndent(baseIndentLvl)}enum class {@enum.Name}"
+                : $"{Helper.GetIndent(baseIndentLvl)}enum {@enum.Name}");
 
             // Type
             if (!string.IsNullOrWhiteSpace(@enum.Type))
@@ -135,7 +425,7 @@ namespace LangPrint.Cpp
             sb.Append(Options.GetNewLineText());
 
             // Open
-            sb.Append($"{GetIndent(baseIndentLvl)}{{{Options.GetNewLineText()}");
+            sb.Append($"{Helper.GetIndent(baseIndentLvl)}{{{Options.GetNewLineText()}");
             baseIndentLvl++;
 
             // Values
@@ -143,26 +433,29 @@ namespace LangPrint.Cpp
             string values = Helper.JoinString(
                 "," + Options.GetNewLineText(),
                 @enum.Values.Select(ev => $"{ev.Name.PadRight(biggestName)} = {ev.Value}"),
-                GetIndent(baseIndentLvl));
+                Helper.GetIndent(baseIndentLvl));
 
             sb.Append(values);
             sb.Append(Options.GetNewLineText());
 
             // Close
             baseIndentLvl--;
-            sb.Append($"{GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
+            sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
 
             return sb.ToString();
         }
 
-        private string GetFunctionString(CppFunction func, CppStruct parent, bool signature, int baseIndentLvl)
+        public string GetFunctionString(CppFunction func, CppStruct parent, bool signature, int baseIndentLvl)
         {
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
+
             var sb = new StringBuilder();
 
             // Comment
             sb.Append(GetMultiCommentString(func.Comment, baseIndentLvl, false));
 
-            sb.Append(GetIndent(baseIndentLvl));
+            sb.Append(Helper.GetIndent(baseIndentLvl));
 
             // Static
             if (func.Static)
@@ -198,19 +491,22 @@ namespace LangPrint.Cpp
             }
 
             // Body
-            sb.Append($"{Options.GetNewLineText()}{GetIndent(baseIndentLvl)}{{{Options.GetNewLineText()}");
+            sb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}{{{Options.GetNewLineText()}");
             baseIndentLvl++;
 
-            sb.Append(Helper.JoinString(Options.GetNewLineText(), func.Body, GetIndent(baseIndentLvl)));
+            sb.Append(Helper.JoinString(Options.GetNewLineText(), func.Body, Helper.GetIndent(baseIndentLvl)));
 
             baseIndentLvl--;
-            sb.Append($"{Options.GetNewLineText()}{GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
+            sb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
 
             return sb.ToString();
         }
 
-        private string GetStructString(CppStruct @struct, int baseIndentLvl)
+        public string GetStructString(CppStruct @struct, int baseIndentLvl)
         {
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
+
             var sb = new StringBuilder();
 
             // Comment
@@ -219,12 +515,12 @@ namespace LangPrint.Cpp
             // Template
             if (@struct.TemplateParams.Count > 0)
             {
-                sb.Append(GetIndent(baseIndentLvl));
+                sb.Append(Helper.GetIndent(baseIndentLvl));
                 sb.Append($"template<{string.Join(", ", @struct.TemplateParams)}>{Options.GetNewLineText()}");
             }
 
             // Kind
-            sb.Append(GetIndent(baseIndentLvl));
+            sb.Append(Helper.GetIndent(baseIndentLvl));
             sb.Append(@struct.IsClass ? "class " : "struct ");
 
             // Name
@@ -237,7 +533,7 @@ namespace LangPrint.Cpp
             sb.Append(Options.GetNewLineText());
 
             // Open struct scope
-            sb.Append($"{GetIndent(baseIndentLvl)}{{{Options.GetNewLineText()}");
+            sb.Append($"{Helper.GetIndent(baseIndentLvl)}{{{Options.GetNewLineText()}");
             baseIndentLvl++;
 
             // Variables
@@ -257,7 +553,7 @@ namespace LangPrint.Cpp
                     if (structVar.Private != lastVarIsPrivate)
                     {
                         lastVarIsPrivate = structVar.Private;
-                        sb.Append($"{GetIndent(baseIndentLvl - 1)}");
+                        sb.Append($"{Helper.GetIndent(baseIndentLvl - 1)}");
                         sb.Append(structVar.Private ? "private:" : "public:");
                         sb.Append(Options.GetNewLineText());
                     }
@@ -266,8 +562,8 @@ namespace LangPrint.Cpp
                     if (structVar.Union && !lastVarIsUnion)
                     {
                         lastVarIsUnion = true;
-                        sb.Append($"{GetIndent(baseIndentLvl)}union{Options.GetNewLineText()}");
-                        sb.Append($"{GetIndent(baseIndentLvl)}{{{Options.GetNewLineText()}");
+                        sb.Append($"{Helper.GetIndent(baseIndentLvl)}union{Options.GetNewLineText()}");
+                        sb.Append($"{Helper.GetIndent(baseIndentLvl)}{{{Options.GetNewLineText()}");
                         baseIndentLvl++;
                     }
 
@@ -276,11 +572,11 @@ namespace LangPrint.Cpp
                     {
                         lastVarIsUnion = false;
                         baseIndentLvl--;
-                        sb.Append($"{GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
+                        sb.Append($"{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
                     }
 
                     // Print variable
-                    sb.Append(GetIndent(baseIndentLvl));
+                    sb.Append(Helper.GetIndent(baseIndentLvl));
                     sb.Append(GetVariableString(structVar));
                     sb.Append(Options.GetNewLineText());
                 }
@@ -289,7 +585,7 @@ namespace LangPrint.Cpp
                 if (lastVarIsUnion)
                 {
                     baseIndentLvl--;
-                    sb.Append($"{GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
+                    sb.Append($"{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
                 }
 
                 sb.Append(Options.GetNewLineText());
@@ -298,7 +594,7 @@ namespace LangPrint.Cpp
             // Friends
             if (@struct.Friends.Count > 0)
             {
-                sb.Append(Helper.JoinString(Options.GetNewLineText(), @struct.Friends, $"{GetIndent(baseIndentLvl)}friend ", ";"));
+                sb.Append(Helper.JoinString(Options.GetNewLineText(), @struct.Friends, $"{Helper.GetIndent(baseIndentLvl)}friend ", ";"));
                 sb.Append(Options.GetNewLineText());
             }
 
@@ -318,7 +614,7 @@ namespace LangPrint.Cpp
                     if (structMethod.Private != lastMethodIsPrivate)
                     {
                         lastMethodIsPrivate = structMethod.Private;
-                        sb.Append($"{GetIndent(baseIndentLvl - 1)}");
+                        sb.Append($"{Helper.GetIndent(baseIndentLvl - 1)}");
                         sb.Append(structMethod.Private ? "private:" : "public:");
                         sb.Append(Options.GetNewLineText());
                     }
@@ -331,113 +627,58 @@ namespace LangPrint.Cpp
 
             // Close struct scope
             baseIndentLvl--;
-            sb.Append($"{GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
+            sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
 
             return sb.ToString();
         }
 
-        private string FinalizeSection(string sectionStr)
+        public string ProcessPragmas(IEnumerable<string> pragmas, int baseIndentLvl)
         {
-            if (string.IsNullOrWhiteSpace(sectionStr))
-                return sectionStr;
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
 
-            if (sectionStr.EndsWith(Options.GetNewLineText() + Options.GetNewLineText()))
-                return sectionStr;
-
-            if (sectionStr.EndsWith(Options.GetNewLineText()))
-                return sectionStr + Options.GetNewLineText();
-
-            return sectionStr + Options.GetNewLineText() + Options.GetNewLineText();
+            string ret = Helper.JoinString(Options.GetNewLineText(), pragmas, $"{Helper.GetIndent(baseIndentLvl)}#pragma ");
+            return Helper.FinalizeSection(ret, Options.GetNewLineText());
         }
 
-        private string ProcessPragmas(IEnumerable<string> pragmas, int baseIndentLvl)
+        public string ProcessIncludes(IEnumerable<string> includes, int baseIndentLvl)
         {
-            string ret = Helper.JoinString(Options.GetNewLineText(), pragmas, $"{GetIndent(baseIndentLvl)}#pragma ");
-            return FinalizeSection(ret);
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
+
+            string ret = Helper.JoinString(Options.GetNewLineText(), includes, $"{Helper.GetIndent(baseIndentLvl)}#include ");
+            return Helper.FinalizeSection(ret, Options.GetNewLineText());
         }
 
-        private string ProcessIncludes(IEnumerable<string> includes, int baseIndentLvl)
+        public string ProcessDefines(IEnumerable<CppDefine> defines, int baseIndentLvl)
         {
-            string ret = Helper.JoinString(Options.GetNewLineText(), includes, $"{GetIndent(baseIndentLvl)}#include ");
-            return FinalizeSection(ret);
-        }
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
 
-        private string ProcessDefines(IEnumerable<CppDefine> defines, int baseIndentLvl)
-        {
             string ret = Helper.JoinString(
                 Options.GetNewLineText(),
                 defines.Select(d => $"{d.Name} {d.Value}"),
-                $"{GetIndent(baseIndentLvl)}#define ");
+                $"{Helper.GetIndent(baseIndentLvl)}#define ");
 
-            return FinalizeSection(ret);
+            return Helper.FinalizeSection(ret, Options.GetNewLineText());
         }
 
-        private string ProcessForwards(IEnumerable<string> forwards, int baseIndentLvl)
+        public string ProcessForwards(IEnumerable<string> forwards, int baseIndentLvl)
         {
-            string ret = Helper.JoinString(Options.GetNewLineText(), forwards, GetIndent(baseIndentLvl), ";");
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
+
+            string ret = Helper.JoinString(Options.GetNewLineText(), forwards, Helper.GetIndent(baseIndentLvl), ";");
             ret += Options.GetNewLineText();
 
-            return FinalizeSection(ret);
+            return Helper.FinalizeSection(ret, Options.GetNewLineText());
         }
 
-        private string ProcessEnums(IEnumerable<CppEnum> enums, int baseIndentLvl)
+        public string ProcessVariables(IEnumerable<CppVariable> variables, int baseIndentLvl)
         {
-            List<CppEnum> vEnums = enums
-                .Where(e => !string.IsNullOrWhiteSpace(e.Name) && ResolveConditions(e.Condition))
-                .ToList();
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
 
-            if (vEnums.Count == 0)
-                return string.Empty;
-
-            string ret = string.Join(Options.GetNewLineText(), vEnums.Select(e => GetEnumString(e, baseIndentLvl)));
-
-            if (Options.PrintSectionName)
-                ret = GetSectionHeading("Enums", baseIndentLvl) + ret;
-
-            return FinalizeSection(ret);
-        }
-
-        private string ProcessConstants(IEnumerable<CppConstant> constants, int baseIndentLvl)
-        {
-            List<string> values = constants
-                .Where(c => !string.IsNullOrWhiteSpace(c.Name) && !string.IsNullOrWhiteSpace(c.Type) && !string.IsNullOrWhiteSpace(c.Value) && ResolveConditions(c.Condition))
-                .Select(c => $"static constexpr {c.Type} {c.Name} = {c.Value}")
-                .ToList();
-
-            if (values.Count == 0)
-                return string.Empty;
-
-            string ret = Helper.JoinString(
-                Options.GetNewLineText(),
-                values,
-                GetIndent(baseIndentLvl),
-                ";");
-
-            if (Options.PrintSectionName && values.Count > 0)
-                ret = GetSectionHeading("Constants", baseIndentLvl) + ret;
-
-            return FinalizeSection(ret);
-        }
-
-        private string ProcessStructs(IEnumerable<CppStruct> structs, int baseIndentLvl)
-        {
-            List<CppStruct> vStruct = structs
-                .Where(s => !string.IsNullOrWhiteSpace(s.Name) && ResolveConditions(s.Condition))
-                .ToList();
-
-            if (vStruct.Count == 0)
-                return string.Empty;
-
-            string ret = string.Join(Options.GetNewLineText(), vStruct.Select(s => GetStructString(s, baseIndentLvl)));
-
-            if (Options.PrintSectionName)
-                ret = GetSectionHeading("Structs", baseIndentLvl) + ret;
-
-            return FinalizeSection(ret);
-        }
-
-        private string ProcessVariables(IEnumerable<CppVariable> variables, int baseIndentLvl)
-        {
             List<CppVariable> vars = variables
                 .Where(v => !string.IsNullOrWhiteSpace(v.Name) && !string.IsNullOrWhiteSpace(v.Type) && ResolveConditions(v.Condition))
                 .ToList();
@@ -445,16 +686,19 @@ namespace LangPrint.Cpp
             if (vars.Count == 0)
                 return string.Empty;
 
-            string ret = Helper.JoinString(Options.GetNewLineText(), vars.Select(v => GetVariableString(v)), GetIndent(baseIndentLvl));
+            string ret = Helper.JoinString(Options.GetNewLineText(), vars.Select(v => GetVariableString(v)), Helper.GetIndent(baseIndentLvl));
 
             if (Options.PrintSectionName)
                 ret = GetSectionHeading("Variables", baseIndentLvl) + ret;
 
-            return FinalizeSection(ret);
+            return Helper.FinalizeSection(ret, Options.GetNewLineText());
         }
 
-        private string ProcessFunctions(IEnumerable<CppFunction> functions, CppStruct parent, bool signatureOnly, int baseIndentLvl)
+        public string ProcessFunctions(IEnumerable<CppFunction> functions, CppStruct parent, bool signatureOnly, int baseIndentLvl)
         {
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
+
             List<CppFunction> funcs = functions
                 .Where(f => !string.IsNullOrWhiteSpace(f.Name) && !string.IsNullOrWhiteSpace(f.Type) && ResolveConditions(f.Condition))
                 .ToList();
@@ -467,428 +711,90 @@ namespace LangPrint.Cpp
             if (Options.PrintSectionName)
                 ret = GetSectionHeading("Global Functions", baseIndentLvl) + ret;
 
-            return FinalizeSection(ret);
+            return Helper.FinalizeSection(ret, Options.GetNewLineText());
         }
 
-        private string GenerateHeaderFile()
+        public string ProcessEnums(IEnumerable<CppEnum> enums, int baseIndentLvl)
         {
-            int indentLvl = 0;
-            var sb = new StringBuilder();
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
 
-            // Pragmas
-            sb.Append(ProcessPragmas(Model.Pragmas, indentLvl));
+            List<CppEnum> vEnums = enums
+                .Where(e => !string.IsNullOrWhiteSpace(e.Name) && ResolveConditions(e.Condition))
+                .ToList();
 
-            // HeadingComment
-            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
+            if (vEnums.Count == 0)
+                return string.Empty;
 
-            // Includes
-            sb.Append(ProcessIncludes(Model.Includes, indentLvl));
+            string ret = string.Join(Options.GetNewLineText(), vEnums.Select(e => GetEnumString(e, baseIndentLvl)));
 
-            // Defines
-            sb.Append(ProcessDefines(Model.Defines, indentLvl));
+            if (Options.PrintSectionName)
+                ret = GetSectionHeading("Enums", baseIndentLvl) + ret;
 
-            // BeforeNameSpace
-            if (!string.IsNullOrWhiteSpace(Model.BeforeNameSpace))
-            {
-                sb.Append(Model.BeforeNameSpace + Options.GetNewLineText());
-                sb.Append(Options.GetNewLineText());
-            }
-
-            // NameSpace
-            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
-            {
-                sb.Append(GetIndent(indentLvl));
-                sb.Append($"namespace {Model.NameSpace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
-                indentLvl++;
-            }
-
-            // Forwards
-            sb.Append(ProcessForwards(Model.Forwards, indentLvl));
-
-            // Constants
-            sb.Append(ProcessConstants(Model.Constants, indentLvl));
-
-            // Variables
-            sb.Append(ProcessVariables(Model.Variables, indentLvl));
-
-            // Global functions
-            sb.Append(ProcessFunctions(Model.Functions, null, true, indentLvl));
-
-            // Enums
-            sb.Append(ProcessEnums(Model.Enums, indentLvl));
-
-            // Structs
-            sb.Append(ProcessStructs(Model.Structs, indentLvl));
-
-            // Close NameSpace
-            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
-            {
-                indentLvl--;
-                sb.Append($"{GetIndent(indentLvl)}}}{Options.GetNewLineText()}");
-                sb.Append(Options.GetNewLineText());
-            }
-
-            // AfterNameSpace
-            if (!string.IsNullOrWhiteSpace(Model.AfterNameSpace))
-            {
-                sb.AppendLine(Model.AfterNameSpace);
-                sb.Append(Options.GetNewLineText());
-            }
-
-            return sb.ToString();
+            return Helper.FinalizeSection(ret, Options.GetNewLineText());
         }
 
-        private string GenerateCppFile()
+        public string ProcessConstants(IEnumerable<CppConstant> constants, int baseIndentLvl)
         {
-            int indentLvl = 0;
-            var sb = new StringBuilder();
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
 
-            // HeadingComment
-            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
+            List<string> values = constants
+                .Where(c => !string.IsNullOrWhiteSpace(c.Name) && !string.IsNullOrWhiteSpace(c.Type) && !string.IsNullOrWhiteSpace(c.Value) && ResolveConditions(c.Condition))
+                .Select(c => $"static constexpr {c.Type} {c.Name} = {c.Value}")
+                .ToList();
 
-            // Includes
-            sb.Append(ProcessIncludes(Model.CppIncludes, indentLvl));
+            if (values.Count == 0)
+                return string.Empty;
 
-            // BeforeNameSpace
-            if (!string.IsNullOrWhiteSpace(Model.CppBeforeNameSpace))
-            {
-                sb.Append(Model.CppBeforeNameSpace + Options.GetNewLineText());
-                sb.Append(Options.GetNewLineText());
-            }
+            string ret = Helper.JoinString(
+                Options.GetNewLineText(),
+                values,
+                Helper.GetIndent(baseIndentLvl),
+                ";");
 
-            // NameSpace
-            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
-            {
-                sb.Append(GetIndent(indentLvl));
-                sb.Append($"namespace {Model.NameSpace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
-                indentLvl++;
-            }
+            if (Options.PrintSectionName && values.Count > 0)
+                ret = GetSectionHeading("Constants", baseIndentLvl) + ret;
 
-            // Global functions
-            sb.Append(ProcessFunctions(Model.Functions, null, false, indentLvl));
-
-            // Static variables
-            if (Model.Structs.Any(s => s.Variables.Any(v => v.Static)))
-            {
-                var methodsStr = new List<string>();
-                sb.Append(GetSectionHeading("Structs Static Variables", indentLvl));
-
-                foreach (CppStruct @struct in Model.Structs)
-                {
-                    IEnumerable<string> variables = @struct.Variables
-                        .Where(v => v.Static && !v.Const && !v.Constexpr)
-                        .Select(v => GetVariableString(v, @struct, true));
-
-                    methodsStr.AddRange(variables);
-                }
-
-                sb.Append(Helper.JoinString(Options.GetNewLineText(), methodsStr, GetIndent(indentLvl)));
-                sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
-            }
-
-            // Structs functions
-            if (Model.Structs.Any(s => s.Methods.Count > 0))
-            {
-                var methodsStr = new List<string>();
-                sb.Append(GetSectionHeading("Structs Functions", indentLvl));
-
-                foreach (CppStruct @struct in Model.Structs)
-                {
-                    methodsStr.AddRange(@struct.Methods.Select(structMethod => GetFunctionString(structMethod, @struct, false, indentLvl)));
-                }
-
-                sb.Append(string.Join(Options.GetNewLineText(), methodsStr));
-                sb.Append(Options.GetNewLineText());
-            }
-
-            // Close NameSpace
-            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
-            {
-                indentLvl--;
-                sb.Append($"{GetIndent(indentLvl)}}}{Options.GetNewLineText()}");
-                sb.Append(Options.GetNewLineText());
-            }
-
-            // AfterNameSpace
-            if (!string.IsNullOrWhiteSpace(Model.CppAfterNameSpace))
-            {
-                sb.AppendLine(Model.CppAfterNameSpace);
-                sb.Append(Options.GetNewLineText());
-            }
-
-            return sb.ToString();
+            return Helper.FinalizeSection(ret, Options.GetNewLineText());
         }
 
-        private string GenerateStructsFile()
+        public string ProcessStructs(IEnumerable<CppStruct> structs, int baseIndentLvl)
         {
-            int indentLvl = 0;
-            var sb = new StringBuilder();
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
 
-            // Pragma
-            sb.Append($"#pragma once{Options.GetNewLineText()}");
-            sb.Append(Options.GetNewLineText());
+            List<CppStruct> vStruct = structs
+                .Where(s => !string.IsNullOrWhiteSpace(s.Name) && ResolveConditions(s.Condition))
+                .ToList();
 
-            // HeadingComment
-            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
+            if (vStruct.Count == 0)
+                return string.Empty;
 
-            // BeforeNameSpace
-            if (!string.IsNullOrWhiteSpace(Model.BeforeNameSpace))
-            {
-                sb.Append(Model.BeforeNameSpace + Options.GetNewLineText());
-                sb.Append(Options.GetNewLineText());
-            }
+            string ret = string.Join(Options.GetNewLineText(), vStruct.Select(s => GetStructString(s, baseIndentLvl)));
 
-            // NameSpace
-            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
-            {
-                sb.Append(GetIndent(indentLvl));
-                sb.Append($"namespace {Model.NameSpace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
-                indentLvl++;
-            }
+            if (Options.PrintSectionName)
+                ret = GetSectionHeading("Structs", baseIndentLvl) + ret;
 
-            // Enums
-            sb.Append(ProcessEnums(Model.Enums, indentLvl));
-
-            // Structs
-            sb.Append(ProcessStructs(Model.Structs.Where(s => !s.IsClass), indentLvl));
-
-            // Close NameSpace
-            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
-            {
-                indentLvl--;
-                sb.Append($"{GetIndent(indentLvl)}}}{Options.GetNewLineText()}");
-                sb.Append(Options.GetNewLineText());
-            }
-
-            // AfterNameSpace
-            if (!string.IsNullOrWhiteSpace(Model.AfterNameSpace))
-            {
-                sb.AppendLine(Model.AfterNameSpace);
-                sb.Append(Options.GetNewLineText());
-            }
-
-            return sb.ToString();
+            return Helper.FinalizeSection(ret, Options.GetNewLineText());
         }
 
-        private string GenerateClassesFile()
-        {
-            int indentLvl = 0;
-            var sb = new StringBuilder();
-
-            // Pragma
-            sb.Append($"#pragma once{Options.GetNewLineText()}");
-            sb.Append(Options.GetNewLineText());
-
-            // HeadingComment
-            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
-
-            // BeforeNameSpace
-            if (!string.IsNullOrWhiteSpace(Model.BeforeNameSpace))
-            {
-                sb.Append(Model.BeforeNameSpace + Options.GetNewLineText());
-                sb.Append(Options.GetNewLineText());
-            }
-
-            // NameSpace
-            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
-            {
-                sb.Append(GetIndent(indentLvl));
-                sb.Append($"namespace {Model.NameSpace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
-                indentLvl++;
-            }
-
-            // Structs
-            sb.Append(ProcessStructs(Model.Structs.Where(s => s.IsClass), indentLvl));
-
-            // Close NameSpace
-            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
-            {
-                indentLvl--;
-                sb.Append($"{GetIndent(indentLvl)}}}{Options.GetNewLineText()}");
-                sb.Append(Options.GetNewLineText());
-            }
-
-            // AfterNameSpace
-            if (!string.IsNullOrWhiteSpace(Model.AfterNameSpace))
-            {
-                sb.AppendLine(Model.AfterNameSpace);
-                sb.Append(Options.GetNewLineText());
-            }
-
-            return sb.ToString();
-        }
-
-        private string GeneratePackageFile()
-        {
-            int indentLvl = 0;
-            var sb = new StringBuilder();
-
-            // Pragmas
-            sb.Append(ProcessPragmas(Model.Pragmas, indentLvl));
-
-            // HeadingComment
-            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
-
-            // Includes
-            sb.Append(ProcessIncludes(Model.Includes, indentLvl));
-
-            // Defines
-            sb.Append(ProcessDefines(Model.Defines, indentLvl));
-
-            // BeforeNameSpace
-            if (!string.IsNullOrWhiteSpace(Model.BeforeNameSpace))
-            {
-                sb.Append(Model.BeforeNameSpace + Options.GetNewLineText());
-                sb.Append(Options.GetNewLineText());
-            }
-
-            // NameSpace
-            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
-            {
-                sb.Append(GetIndent(indentLvl));
-                sb.Append($"namespace {Model.NameSpace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
-                indentLvl++;
-            }
-
-            // Forwards
-            sb.Append(ProcessForwards(Model.Forwards, indentLvl));
-
-            // Constants
-            sb.Append(ProcessConstants(Model.Constants, indentLvl));
-
-            // Variables
-            sb.Append(ProcessVariables(Model.Variables, indentLvl));
-
-            // Global functions
-            sb.Append(ProcessFunctions(Model.Functions, null, true, indentLvl));
-
-            // Package include
-            var packHeaders = new List<string>()
-            {
-                $"{Model.Name}_Structs.h",
-                $"{Model.Name}_Classes.h"
-            };
-            sb.Append(GetSectionHeading("Structs & Classes", indentLvl));
-            sb.Append(Helper.JoinString(Options.GetNewLineText(), packHeaders, $"{GetIndent(indentLvl)}#include \"", "\""));
-            sb.Append(Options.GetNewLineText());
-
-            // Close NameSpace
-            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
-            {
-                indentLvl--;
-                sb.Append($"{GetIndent(indentLvl)}}}{Options.GetNewLineText()}");
-                sb.Append(Options.GetNewLineText());
-            }
-
-            // AfterNameSpace
-            if (!string.IsNullOrWhiteSpace(Model.AfterNameSpace))
-            {
-                sb.AppendLine(Model.AfterNameSpace);
-                sb.Append(Options.GetNewLineText());
-            }
-
-            return sb.ToString();
-        }
-
-        private string GenerateFunctionsFile()
-        {
-            int indentLvl = 0;
-            var sb = new StringBuilder();
-
-            // HeadingComment
-            sb.Append(GetMultiCommentString(Model.HeadingComment, indentLvl));
-
-            // Includes
-            sb.Append(ProcessIncludes(Model.CppIncludes, indentLvl));
-            sb.Append($"#include \"{Model.Name}_Package.h\"{Options.GetNewLineText()}");
-            sb.Append(Options.GetNewLineText());
-
-            // BeforeNameSpace
-            if (!string.IsNullOrWhiteSpace(Model.CppBeforeNameSpace))
-            {
-                sb.Append(Model.CppBeforeNameSpace + Options.GetNewLineText());
-                sb.Append(Options.GetNewLineText());
-            }
-
-            // NameSpace
-            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
-            {
-                sb.Append(GetIndent(indentLvl));
-                sb.Append($"namespace {Model.NameSpace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
-                indentLvl++;
-            }
-
-            // Global functions
-            sb.Append(ProcessFunctions(Model.Functions, null, false, indentLvl));
-
-            // Static variables
-            if (Model.Structs.Any(s => s.Variables.Any(v => v.Static)))
-            {
-                var methodsStr = new List<string>();
-                sb.Append(GetSectionHeading("Structs Static Variables", indentLvl));
-
-                foreach (CppStruct @struct in Model.Structs)
-                {
-                    IEnumerable<string> variables = @struct.Variables
-                        .Where(v => v.Static && !v.Const && !v.Constexpr)
-                        .Select(v => GetVariableString(v, @struct, true));
-
-                    methodsStr.AddRange(variables);
-                }
-
-                sb.Append(Helper.JoinString(Options.GetNewLineText(), methodsStr, GetIndent(indentLvl)));
-                sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
-            }
-
-            // Structs functions
-            if (Model.Structs.Any(s => s.Methods.Count > 0))
-            {
-                var methodsStr = new List<string>();
-                sb.Append(GetSectionHeading("Structs Functions", indentLvl));
-
-                foreach (CppStruct @struct in Model.Structs)
-                {
-                    methodsStr.AddRange(@struct.Methods.Select(structMethod => GetFunctionString(structMethod, @struct, false, indentLvl)));
-                }
-
-                sb.Append(string.Join(Options.GetNewLineText(), methodsStr));
-                sb.Append(Options.GetNewLineText());
-            }
-
-            // Close NameSpace
-            if (!string.IsNullOrWhiteSpace(Model.NameSpace))
-            {
-                indentLvl--;
-                sb.Append($"{GetIndent(indentLvl)}}}{Options.GetNewLineText()}");
-                sb.Append(Options.GetNewLineText());
-            }
-
-            // AfterNameSpace
-            if (!string.IsNullOrWhiteSpace(Model.CppAfterNameSpace))
-            {
-                sb.AppendLine(Model.CppAfterNameSpace);
-                sb.Append(Options.GetNewLineText());
-            }
-
-            return sb.ToString();
-        }
-
-        public void Process(CppModel cppModel, CppLangOptions options = null)
+        public void Init(CppModel cppModel, CppLangOptions options = null)
         {
             Options = options ?? new CppLangOptions();
             Model = cppModel;
             Model.Conditions = Model.Conditions.Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
         }
 
-        public void Process(string jsonData, CppLangOptions options = null)
+        public void Init(string jsonData, CppLangOptions options = null)
         {
-            Process(JsonConvert.DeserializeObject<CppModel>(jsonData), options);
+            Init(JsonConvert.DeserializeObject<CppModel>(jsonData), options);
         }
 
-        public Dictionary<string, string> Generate()
+        public Dictionary<string, string> GenerateFiles()
         {
-            if (Model is null)
-                throw new Exception($"Call '{nameof(Process)}' function first");
+            if (Options is null)
+                throw new Exception($"Call '{nameof(Init)}' function first");
 
             var ret = new Dictionary<string, string>();
 

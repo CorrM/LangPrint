@@ -4,7 +4,6 @@ using Newtonsoft.Json;
 
 /*
  * ToDo:
- * - Add comments
  * - Add string above and before class/struct/enums
  * - Add Virtual functions to class/struct
  */
