@@ -2,9 +2,9 @@
 
 namespace LangPrint
 {
-    public interface ILangProcessor<TModel, in TOptions>
+    public interface ILangProcessor<TModel, TOptions>
     {
-        LangOptions Options { get; }
+        TOptions Options { get; }
         TModel Model { get; }
 
         void Init(TModel model, TOptions options);

@@ -9,7 +9,7 @@ namespace LangPrint.Cpp
 {
     public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
     {
-        public LangOptions Options { get; private set; }
+        public CppLangOptions Options { get; private set; }
         public CppModel Model { get; private set; }
 
         private string GenerateHeaderFile()
