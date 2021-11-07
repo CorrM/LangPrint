@@ -313,12 +313,12 @@ namespace LangPrint.Cpp
             return sb.ToString();
         }
 
-        public string GetParamString(CppParam param)
+        public string GetParamString(CppParameter parameter)
         {
             if (Options is null)
                 throw new Exception($"Call '{nameof(Init)}' function first");
 
-            return $"{param.Type} {param.Name}";
+            return $"{parameter.Type} {parameter.Name}";
         }
 
         public string GetVariableString(CppVariable variable, CppStruct parent = null, bool definition = false)
@@ -345,8 +345,9 @@ namespace LangPrint.Cpp
                 sb.Append("constexpr ");
 
             // Type
-            sb.Append($"{variable.Type} ");
+            sb.Append($"{variable.Type.PadLeft(Options.VariableMemberTypePadSize)} ");
 
+            // Parent name
             if (definition && parent is not null)
                 sb.Append($"{parent.Name}::");
 
@@ -366,6 +367,10 @@ namespace LangPrint.Cpp
                 sb.Append($" = {variable.Value}");
 
             sb.Append(';');
+
+            // Inline comment
+            if (string.IsNullOrEmpty(variable.InlineComment))
+                sb.Append($" {"//".PadLeft(Options.InlineCommentPadSize)} {variable.InlineComment}");
 
             return sb.ToString();
         }
@@ -421,6 +426,10 @@ namespace LangPrint.Cpp
             // Type
             if (!string.IsNullOrWhiteSpace(@enum.Type))
                 sb.Append($" : {@enum.Type}");
+
+            // Inline comment
+            if (string.IsNullOrEmpty(@enum.InlineComment))
+                sb.Append($" {"//".PadLeft(Options.InlineCommentPadSize)} {@enum.InlineComment}");
 
             sb.Append(Options.GetNewLineText());
 
@@ -490,8 +499,14 @@ namespace LangPrint.Cpp
                 return sb.ToString();
             }
 
+            // Inline comment
+            if (string.IsNullOrEmpty(func.InlineComment))
+                sb.Append($" {"//".PadLeft(Options.InlineCommentPadSize)} {func.InlineComment}");
+
+            sb.Append(Options.GetNewLineText());
+
             // Body
-            sb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}{{{Options.GetNewLineText()}");
+            sb.Append($"{Helper.GetIndent(baseIndentLvl)}{{{Options.GetNewLineText()}");
             baseIndentLvl++;
 
             sb.Append(Helper.JoinString(Options.GetNewLineText(), func.Body, Helper.GetIndent(baseIndentLvl)));
@@ -529,6 +544,10 @@ namespace LangPrint.Cpp
             // Supers
             if (@struct.Supers.Count > 0)
                 sb.Append($" : {Helper.JoinString(", ", @struct.Supers, "public ")}");
+
+            // Inline comment
+            if (string.IsNullOrEmpty(@struct.InlineComment))
+                sb.Append($" {"//".PadLeft(Options.InlineCommentPadSize)} {@struct.InlineComment}");
 
             sb.Append(Options.GetNewLineText());
 
@@ -779,22 +798,18 @@ namespace LangPrint.Cpp
             return Helper.FinalizeSection(ret, Options.GetNewLineText());
         }
 
-        public void Init(CppModel cppModel, CppLangOptions options = null)
+        public void Init(CppLangOptions options = null)
         {
             Options = options ?? new CppLangOptions();
-            Model = cppModel;
-            Model.Conditions = Model.Conditions.Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
         }
 
-        public void Init(string jsonData, CppLangOptions options = null)
-        {
-            Init(JsonConvert.DeserializeObject<CppModel>(jsonData), options);
-        }
-
-        public Dictionary<string, string> GenerateFiles()
+        public Dictionary<string, string> GenerateFiles(CppModel cppModel)
         {
             if (Options is null)
                 throw new Exception($"Call '{nameof(Init)}' function first");
+
+            Model = cppModel;
+            Model.Conditions = Model.Conditions.Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
 
             var ret = new Dictionary<string, string>();
 
@@ -812,6 +827,11 @@ namespace LangPrint.Cpp
             ret.Add($"{Model.Name}_Package.cpp", GenerateFunctionsFile());
 
             return ret;
+        }
+
+        public Dictionary<string, string> GenerateFiles(string jsonData)
+        {
+            return GenerateFiles(JsonConvert.DeserializeObject<CppModel>(jsonData));
         }
     }
 }

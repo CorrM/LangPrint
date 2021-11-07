@@ -2,13 +2,13 @@
 
 namespace LangPrint
 {
-    public interface ILangProcessor<TModel, TOptions>
+    public interface ILangProcessor<in TModel, TOptions> where TModel : ILangModel where TOptions : LangOptions
     {
         TOptions Options { get; }
-        TModel Model { get; }
+        //TModel Model { get; }
 
-        void Init(TModel model, TOptions options);
-        void Init(string jsonData, TOptions options);
-        Dictionary<string, string> GenerateFiles();
+        void Init(TOptions options);
+        Dictionary<string, string> GenerateFiles(TModel cppModel);
+        Dictionary<string, string> GenerateFiles(string jsonData);
     }
 }

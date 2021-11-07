@@ -10,56 +10,48 @@ using Newtonsoft.Json;
 
 namespace LangPrint.Cpp
 {
+    public class CppItemBase
+    {
+
+        [JsonProperty("Comment")]
+        public List<string> Comment { get; set; }
+
+        [JsonProperty("InlineComment")]
+        public string InlineComment { get; set; }
+
+        [JsonProperty("Condition")]
+        public List<string> Condition { get; set; }
+    }
+
     [DebuggerDisplay("{" + nameof(Name) + "}" + " {" + nameof(Value) + "}")]
-    public class CppDefine
+    public class CppDefine : CppItemBase
     {
         [JsonProperty("Name")]
         public string Name { get; set; }
 
         [JsonProperty("Value")]
         public string Value { get; set; }
-
-        [JsonProperty("Comment")]
-        public List<string> Comment { get; set; }
-
-        [JsonProperty("Condition")]
-        public List<string> Condition { get; set; }
     }
 
     [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-    public class CppConstant
+    public class CppConstant : CppDefine
     {
         [JsonProperty("Type")]
         public string Type { get; set; }
-
-        [JsonProperty("Name")]
-        public string Name { get; set; }
-
-        [JsonProperty("Value")]
-        public string Value { get; set; }
-
-        [JsonProperty("Comment")]
-        public List<string> Comment { get; set; }
-
-        [JsonProperty("Condition")]
-        public List<string> Condition { get; set; }
     }
 
     [DebuggerDisplay("{" + nameof(Name) + "}" + " {" + nameof(Value) + "}")]
-    public class CppNameValue
+    public class CppNameValue : CppItemBase
     {
         [JsonProperty("Name")]
         public string Name { get; set; }
 
         [JsonProperty("Value")]
         public string Value { get; set; }
-
-        [JsonProperty("Comment")]
-        public List<string> Comment { get; set; }
     }
 
     [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-    public class CppEnum
+    public class CppEnum : CppItemBase
     {
         [JsonProperty("Name")]
         public string Name { get; set; }
@@ -72,16 +64,20 @@ namespace LangPrint.Cpp
 
         [JsonProperty("Values")]
         public List<CppNameValue> Values { get; set; }
-
-        [JsonProperty("Comment")]
-        public List<string> Comment { get; set; }
-
-        [JsonProperty("Condition")]
-        public List<string> Condition { get; set; }
     }
 
     [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-    public class CppParam
+    public class CppParameter : CppItemBase
+    {
+        [JsonProperty("Type")]
+        public string Type { get; set; }
+
+        [JsonProperty("Name")]
+        public string Name { get; set; }
+    }
+
+    [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
+    public class CppFunction : CppItemBase
     {
         [JsonProperty("Type")]
         public string Type { get; set; }
@@ -89,21 +85,11 @@ namespace LangPrint.Cpp
         [JsonProperty("Name")]
         public string Name { get; set; }
 
-        [JsonProperty("Condition")]
-        public List<string> Condition { get; set; }
-    }
-
-    [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-    public class CppFunction
-    {
-        [JsonProperty("Type")]
-        public string Type { get; set; }
-
-        [JsonProperty("Name")]
-        public string Name { get; set; }
+        [JsonProperty("TemplateParams")]
+        public List<string> TemplateParams { get; set; }
 
         [JsonProperty("Params")]
-        public List<CppParam> Params { get; set; }
+        public List<CppParameter> Params { get; set; }
 
         [JsonProperty("Private")]
         public bool Private { get; set; }
@@ -119,16 +105,10 @@ namespace LangPrint.Cpp
 
         [JsonProperty("Body")]
         public List<string> Body { get; set; }
-
-        [JsonProperty("Comment")]
-        public List<string> Comment { get; set; }
-
-        [JsonProperty("Condition")]
-        public List<string> Condition { get; set; }
     }
 
     [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-    public class CppVariable
+    public class CppVariable : CppItemBase
     {
         [JsonProperty("Type")]
         public string Type { get; set; }
@@ -162,16 +142,10 @@ namespace LangPrint.Cpp
 
         [JsonProperty("Union")]
         public bool Union { get; set; }
-
-        [JsonProperty("Comment")]
-        public List<string> Comment { get; set; }
-
-        [JsonProperty("Condition")]
-        public List<string> Condition { get; set; }
     }
 
     [DebuggerDisplay("{" + nameof(Name) + "}")]
-    public class CppStruct
+    public class CppStruct : CppItemBase
     {
         [JsonProperty("Name")]
         public string Name { get; set; }
@@ -193,15 +167,9 @@ namespace LangPrint.Cpp
 
         [JsonProperty("Methods")]
         public List<CppFunction> Methods { get; set; }
-
-        [JsonProperty("Comment")]
-        public List<string> Comment { get; set; }
-
-        [JsonProperty("Condition")]
-        public List<string> Condition { get; set; }
     }
 
-    public class CppModel : ILanguage
+    public class CppModel : ILangModel
     {
         [JsonProperty("Lang")]
         public string Lang { get; set; }

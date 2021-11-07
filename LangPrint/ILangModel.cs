@@ -1,6 +1,6 @@
 ﻿namespace LangPrint
 {
-    public interface ILanguage
+    public interface ILangModel
     {
         string Lang { get; }
     }

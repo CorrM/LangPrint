@@ -23,8 +23,8 @@
             <summary>
             Load and prepare data that processor needs
             </summary>
-            <param name="jsonData">Model json string</param>
-            <param name="options">Customize how processor work</param>
+            <parameter name="jsonData">Model json string</parameter>
+            <parameter name="options">Customize how processor work</parameter>
         </member>
         <member name="T:LangPrint.Utils.StringBuilder2">
             <summary>
@@ -50,7 +50,7 @@
             <summary>
             Constructor
             </summary>
-            <param name="str">Text to init with</param>
+            <parameter name="str">Text to init with</parameter>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.#ctor">
             <summary>
@@ -61,27 +61,27 @@
             <summary>
             Removes the specified range of characters from this instance.
             </summary>
-            <param name="index">The zero-based position in this instance where removal begins.</param>
-            <param name="len">The number of characters to remove.</param>
+            <parameter name="index">The zero-based position in this instance where removal begins.</parameter>
+            <parameter name="len">The number of characters to remove.</parameter>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.Replace(System.String,System.String)">
             <summary>
             Replaces all occurrences of a specified string in this instance with another specified string.
             </summary>
-            <param name="old">Text to be replaced</param>
-            <param name="newStr">Text to replace with</param>
+            <parameter name="old">Text to be replaced</parameter>
+            <parameter name="newStr">Text to replace with</parameter>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.Append(System.String)">
             <summary>
             Appends a copy of the specified string to this instance.
             </summary>
-            <param name="str">Text to append</param>
+            <parameter name="str">Text to append</parameter>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.AppendLine(System.String)">
             <summary>
             Appends a copy of the specified string to this instance.
             </summary>
-            <param name="str">Text to append</param>
+            <parameter name="str">Text to append</parameter>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.ToString">
             <summary>
