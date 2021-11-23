@@ -1,30 +1,25 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace LangPrint
+namespace LangPrint;
+
+public enum NewLineType
 {
-    public enum NewLineType
-    {
-        CRLF,
-        LF
-    }
+    CRLF,
+    LF
+}
 
-    public class LangOptions
-    {
-        public NewLineType NewLine { get; init; } = NewLineType.CRLF;
-        public bool PrintSectionName { get; init; } = true;
+public class LangOptions
+{
+    public NewLineType NewLine { get; init; } = NewLineType.CRLF;
+    public bool PrintSectionName { get; init; } = true;
 
-        public string GetNewLineText()
+    public string GetNewLineText()
+    {
+        return NewLine switch
         {
-            return NewLine switch
-            {
-                NewLineType.CRLF => "\r\n",
-                NewLineType.LF => "\n",
-                _ => throw new ArgumentOutOfRangeException()
-            };
-        }
+            NewLineType.CRLF => "\r\n",
+            NewLineType.LF => "\n",
+            _ => throw new ArgumentOutOfRangeException()
+        };
     }
 }
