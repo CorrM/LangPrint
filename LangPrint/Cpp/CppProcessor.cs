@@ -12,9 +12,9 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
 {
     public CppLangOptions Options { get; private set; }
 
-    private static bool ResolveConditions(List<string> conditions, List<string> conditionsToResolve)
+    private bool ResolveConditions(List<string> conditions, List<string> conditionsToResolve)
     {
-        if (conditions is null || conditions.Count == 0)
+        if (!Options.ResolveConditions)
             return true;
 
         if (conditionsToResolve is null || conditionsToResolve.Count == 0)
@@ -91,7 +91,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
                 methodsStr.AddRange(variables);
             }
 
-            sb.Append(Helper.JoinString(Options.GetNewLineText(), methodsStr, Helper.GetIndent(indentLvl)));
+            sb.Append(Helper.JoinString(Options.GetNewLineText(), methodsStr));
             sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
         }
 
@@ -168,8 +168,16 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
     {
         var sb = new StringBuilder();
 
+        // Package include
+        var packHeaders = new List<string>(model.Includes)
+        {
+            $"\"{model.Name}_Structs.h\"",
+            $"\"{model.Name}_Classes.h\""
+        };
+        packHeaders.AddRange(model.PackageHeaderIncludes);
+
         // File header
-        sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, model.Pragmas, model.Includes, model.Defines, model.BeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, model.Pragmas, packHeaders, model.Defines, model.BeforeNameSpace, out int indentLvl));
 
         // Forwards
         sb.Append(GenerateForwards(model.Forwards, indentLvl));
@@ -185,19 +193,6 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
 
         // File footer
         sb.Append(GetFileFooter(model.NameSpace, model.AfterNameSpace, ref indentLvl));
-
-        sb.Append(Options.GetNewLineText());
-
-        // Package include
-        var packHeaders = new List<string>()
-            {
-                $"{model.Name}_Structs.h",
-                $"{model.Name}_Classes.h"
-            };
-        packHeaders.AddRange(model.PackageHeaderIncludes);
-
-        sb.Append(Helper.JoinString(Options.GetNewLineText(), packHeaders, $"{Helper.GetIndent(indentLvl)}#include \"", "\""));
-        sb.Append(Options.GetNewLineText());
 
         return sb.ToString();
     }
@@ -392,7 +387,10 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             sb.Append("constexpr ");
 
         // Type
-        sb.Append($"{variable.Type.PadRight(Options.VariableMemberTypePadSize)} ");
+        sb.Append(variable.Type);
+        string prefix = sb.ToString();
+        sb.Clear();
+        sb.Append($"{prefix.PadRight(Options.VariableMemberTypePadSize)} ");
 
         var nameSb = new StringBuilder();
 
@@ -811,7 +809,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         string ret = string.Join(Options.GetNewLineText(), vStruct.Select(s => GetStructString(s, baseIndentLvl, conditions)));
 
         if (Options.PrintSectionName)
-            ret = GetSectionHeading(structs.All(s => s.IsClass) ? "Classess" : "Structs", baseIndentLvl) + ret;
+            ret = GetSectionHeading(vStruct.All(s => s.IsClass) ? "Classes" : "Structs", baseIndentLvl) + ret;
 
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
