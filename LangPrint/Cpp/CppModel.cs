@@ -19,8 +19,8 @@ public class CppItemBase
     [JsonProperty("InlineComment")]
     public string InlineComment { get; set; }
 
-    [JsonProperty("Condition")]
-    public List<string> Condition { get; set; } = new();
+    [JsonProperty("Conditions")]
+    public List<string> Conditions { get; set; } = new();
 }
 
 [DebuggerDisplay("{" + nameof(Name) + "}" + " {" + nameof(Value) + "}")]

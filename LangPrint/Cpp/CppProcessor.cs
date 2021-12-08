@@ -12,27 +12,6 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
 {
     public CppLangOptions Options { get; private set; }
 
-    private bool ResolveConditions(List<string> conditions, List<string> conditionsToResolve)
-    {
-        if (!Options.ResolveConditions)
-            return true;
-
-        if (conditionsToResolve is null || conditionsToResolve.Count == 0)
-            return true;
-
-        // ! conditions
-        foreach (string condition in conditionsToResolve.Where(c => !string.IsNullOrWhiteSpace(c) && c.StartsWith("!")))
-        {
-            if (conditions.Any(gCondition => condition[1..] == gCondition))
-                return false;
-        }
-
-        // All conditions must to be fitted
-        return conditionsToResolve
-            .Where(c => !string.IsNullOrWhiteSpace(c) && !c.StartsWith("!"))
-            .All(conditions.Contains);
-    }
-
     private string MakeHeaderFile(CppModel model)
     {
         var sb = new StringBuilder();
@@ -68,6 +47,10 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
     {
         var sb = new StringBuilder();
 
+        List<CppStruct> validStructs = model.Structs
+            .Where(s => ResolveConditions(model.Conditions, s.Conditions))
+            .ToList();
+
         // File header
         List<string> includes = model.CppIncludes.Append($"\"{model.Name}.h\"").ToList();
         sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, null, includes, null, model.CppBeforeNameSpace, out int indentLvl));
@@ -76,12 +59,16 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         sb.Append(GenerateFunctions(model.Functions, null, false, indentLvl, model.Conditions));
 
         // Static variables
-        if (model.Structs.Any(s => s.Variables.Any(v => v.Static)))
+        IEnumerable<CppVariable> staticVars = validStructs
+            .SelectMany(s => s.Variables)
+            .Where(v => ResolveConditions(model.Conditions, v.Conditions));
+
+        if (staticVars.Any(v => v.Static))
         {
             var methodsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs Static Variables", indentLvl));
 
-            foreach (CppStruct @struct in model.Structs)
+            foreach (CppStruct @struct in validStructs)
             {
                 List<string> variables = @struct.Variables
                     .Where(v => v.Static && !v.Const && !v.Constexpr)
@@ -96,15 +83,13 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         }
 
         // Structs functions
-        if (model.Structs.Any(s => s.Methods.Count > 0))
+        if (validStructs.Any(s => s.Methods.Count > 0))
         {
             var methodsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs Functions", indentLvl));
 
-            foreach (CppStruct @struct in model.Structs)
-            {
+            foreach (CppStruct @struct in validStructs)
                 methodsStr.AddRange(@struct.Methods.Select(structMethod => GetFunctionString(structMethod, @struct, false, indentLvl, model.Conditions)));
-            }
 
             sb.Append(string.Join(Options.GetNewLineText(), methodsStr));
             sb.Append(Options.GetNewLineText());
@@ -164,7 +149,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         return sb.ToString();
     }
 
-    private string MakePackageFile(CppModel model)
+    private string MakePackageHeaderFile(CppModel model)
     {
         var sb = new StringBuilder();
 
@@ -197,9 +182,13 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         return sb.ToString();
     }
 
-    private string MakeFunctionsFile(CppModel model)
+    private string MakePackageCppFile(CppModel model)
     {
         var sb = new StringBuilder();
+
+        List<CppStruct> validStructs = model.Structs
+            .Where(s => ResolveConditions(model.Conditions, s.Conditions))
+            .ToList();
 
         // File header
         var includes = new List<string>(model.CppIncludes)
@@ -212,32 +201,37 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         sb.Append(GenerateFunctions(model.Functions, null, false, indentLvl, model.Conditions));
 
         // Static variables
-        if (model.Structs.Any(s => s.Variables.Any(v => v.Static)))
+        IEnumerable<CppVariable> staticVars = validStructs
+            .SelectMany(s => s.Variables)
+            .Where(v => ResolveConditions(model.Conditions, v.Conditions));
+
+        if (staticVars.Any(v => v.Static))
         {
-            var methodsStr = new List<string>();
+            var varsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs Static Variables", indentLvl));
 
-            foreach (CppStruct @struct in model.Structs)
+            foreach (CppStruct @struct in validStructs)
             {
                 List<string> variables = @struct.Variables
+                    .Where(v => ResolveConditions(model.Conditions, v.Conditions))
                     .Where(v => v.Static && !v.Const && !v.Constexpr)
                     .Select(v => GetVariableString(v, indentLvl, @struct, true))
                     .ToList();
 
-                methodsStr.AddRange(variables);
+                varsStr.AddRange(variables);
             }
 
-            sb.Append(Helper.JoinString(Options.GetNewLineText(), methodsStr, Helper.GetIndent(indentLvl)));
+            sb.Append(Helper.JoinString(Options.GetNewLineText(), varsStr));
             sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
         }
 
         // Structs functions
-        if (model.Structs.Any(s => s.Methods.Count > 0))
+        if (validStructs.Any(s => s.Methods.Count > 0))
         {
             var methodsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs Functions", indentLvl));
 
-            foreach (CppStruct @struct in model.Structs)
+            foreach (CppStruct @struct in validStructs)
             {
                 methodsStr.AddRange(@struct.Methods.Select(structMethod => GetFunctionString(structMethod, @struct, false, indentLvl, model.Conditions)));
             }
@@ -250,6 +244,27 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         sb.Append(GetFileFooter(model.NameSpace, model.CppAfterNameSpace, ref indentLvl));
 
         return sb.ToString();
+    }
+
+    public bool ResolveConditions(List<string> conditions, List<string> conditionsToResolve)
+    {
+        if (!Options.ResolveConditions)
+            return true;
+
+        if (conditionsToResolve is null || conditionsToResolve.Count == 0)
+            return true;
+
+        // ! conditions
+        foreach (string condition in conditionsToResolve.Where(c => !string.IsNullOrWhiteSpace(c) && c.StartsWith("!")))
+        {
+            if (conditions.Any(gCondition => condition[1..] == gCondition))
+                return false;
+        }
+
+        // All conditions must to be fitted
+        return conditionsToResolve
+            .Where(c => !string.IsNullOrWhiteSpace(c) && !c.StartsWith("!"))
+            .All(conditions.Contains);
     }
 
     public string GetFileHeader(IEnumerable<string> headingComment, string nameSpace, List<string> pragmas, List<string> includes, List<CppDefine> defines, string beforeNameSpace, out int indentLvl)
@@ -503,7 +518,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
 
         // Params
         sb.Append('(');
-        sb.Append(string.Join(", ", func.Params.Where(p => ResolveConditions(conditions, p.Condition)).Select(GetParamString)));
+        sb.Append(string.Join(", ", func.Params.Where(p => ResolveConditions(conditions, p.Conditions)).Select(GetParamString)));
         sb.Append(')');
 
         // Const
@@ -577,7 +592,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         {
             bool lastVarIsPrivate = false;
             bool lastVarIsUnion = false;
-            List<CppVariable> variables = @struct.Variables.Where(v => !string.IsNullOrWhiteSpace(v.Name) && ResolveConditions(conditions, v.Condition)).ToList();
+            List<CppVariable> variables = @struct.Variables.Where(v => !string.IsNullOrWhiteSpace(v.Name) && ResolveConditions(conditions, v.Conditions)).ToList();
 
             // Force write "private" or "public"
             if (variables.Count > 0)
@@ -637,7 +652,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         if (@struct.Methods.Count > 0)
         {
             bool lastMethodIsPrivate = false;
-            List<CppFunction> methods = @struct.Methods.Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(conditions, m.Condition)).ToList();
+            List<CppFunction> methods = @struct.Methods.Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(conditions, m.Conditions)).ToList();
 
             // Force write "private" or "public"
             if (methods.Count > 0)
@@ -715,7 +730,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         List<CppVariable> vars = variables
-            .Where(v => !string.IsNullOrWhiteSpace(v.Name) && !string.IsNullOrWhiteSpace(v.Type) && ResolveConditions(conditions, v.Condition))
+            .Where(v => !string.IsNullOrWhiteSpace(v.Name) && !string.IsNullOrWhiteSpace(v.Type) && ResolveConditions(conditions, v.Conditions))
             .ToList();
 
         if (vars.Count == 0)
@@ -735,7 +750,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         List<CppFunction> funcs = functions
-            .Where(f => !string.IsNullOrWhiteSpace(f.Name) && !string.IsNullOrWhiteSpace(f.Type) && ResolveConditions(conditions, f.Condition))
+            .Where(f => !string.IsNullOrWhiteSpace(f.Name) && !string.IsNullOrWhiteSpace(f.Type) && ResolveConditions(conditions, f.Conditions))
             .ToList();
 
         if (funcs.Count == 0)
@@ -755,7 +770,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         List<CppEnum> vEnums = enums
-            .Where(e => !string.IsNullOrWhiteSpace(e.Name) && ResolveConditions(conditions, e.Condition))
+            .Where(e => !string.IsNullOrWhiteSpace(e.Name) && ResolveConditions(conditions, e.Conditions))
             .ToList();
 
         if (vEnums.Count == 0)
@@ -775,7 +790,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         List<string> values = constants
-            .Where(c => !string.IsNullOrWhiteSpace(c.Name) && !string.IsNullOrWhiteSpace(c.Type) && !string.IsNullOrWhiteSpace(c.Value) && ResolveConditions(conditions, c.Condition))
+            .Where(c => !string.IsNullOrWhiteSpace(c.Name) && !string.IsNullOrWhiteSpace(c.Type) && !string.IsNullOrWhiteSpace(c.Value) && ResolveConditions(conditions, c.Conditions))
             .Select(c => $"static constexpr {c.Type} {c.Name} = {c.Value}")
             .ToList();
 
@@ -800,7 +815,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         List<CppStruct> vStruct = structs
-            .Where(s => !string.IsNullOrWhiteSpace(s.Name) && ResolveConditions(conditions, s.Condition))
+            .Where(s => !string.IsNullOrWhiteSpace(s.Name) && ResolveConditions(conditions, s.Conditions))
             .ToList();
 
         if (vStruct.Count == 0)
@@ -843,8 +858,8 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
 
         ret.Add($"{cppModel.Name}_Structs.h", MakeStructsFile(cppModel));
         ret.Add($"{cppModel.Name}_Classes.h", MakeClassesFile(cppModel));
-        ret.Add($"{cppModel.Name}_Package.h", MakePackageFile(cppModel));
-        ret.Add($"{cppModel.Name}_Package.cpp", MakeFunctionsFile(cppModel));
+        ret.Add($"{cppModel.Name}_Package.h", MakePackageHeaderFile(cppModel));
+        ret.Add($"{cppModel.Name}_Package.cpp", MakePackageCppFile(cppModel));
 
         return ret;
     }
