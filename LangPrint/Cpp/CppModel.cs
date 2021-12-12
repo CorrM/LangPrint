@@ -100,6 +100,9 @@ public class CppFunction : CppItemBase
     [JsonProperty("Const")]
     public bool Const { get; set; }
 
+    [JsonProperty("Friend")]
+    public bool Friend { get; set; }
+
     [JsonProperty("Inline")]
     public bool Inline { get; set; }
 
@@ -133,6 +136,9 @@ public class CppVariable : CppItemBase
 
     [JsonProperty("Static")]
     public bool Static { get; set; }
+
+    [JsonProperty("Friend")]
+    public bool Friend { get; set; }
 
     [JsonProperty("Const")]
     public bool Const { get; set; }

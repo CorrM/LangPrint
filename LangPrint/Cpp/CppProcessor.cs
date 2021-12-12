@@ -383,6 +383,10 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         if (!definition && variable.Static)
             sb.Append("static ");
 
+        // Friend
+        if (!definition && variable.Friend)
+            sb.Append("friend ");
+
         // Const
         if (variable.Const)
             sb.Append("const ");
@@ -497,8 +501,12 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         sb.Append(Helper.GetIndent(baseIndentLvl));
 
         // Static
-        if (func.Static && signature)
+        if (signature && func.Static)
             sb.Append("static ");
+
+        // Friend
+        if (signature && func.Friend)
+            sb.Append("friend ");
 
         // Inline
         if (func.Inline && signature)
