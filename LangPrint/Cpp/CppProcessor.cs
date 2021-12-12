@@ -153,16 +153,8 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
     {
         var sb = new StringBuilder();
 
-        // Package include
-        var packHeaders = new List<string>(model.Includes)
-        {
-            $"\"{model.Name}_Structs.h\"",
-            $"\"{model.Name}_Classes.h\""
-        };
-        packHeaders.AddRange(model.PackageHeaderIncludes);
-
         // File header
-        sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, model.Pragmas, packHeaders, model.Defines, model.BeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, model.Pragmas, model.Includes, model.Defines, model.BeforeNameSpace, out int indentLvl));
 
         // Forwards
         sb.Append(GenerateForwards(model.Forwards, indentLvl));
@@ -178,6 +170,17 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
 
         // File footer
         sb.Append(GetFileFooter(model.NameSpace, model.AfterNameSpace, ref indentLvl));
+
+        sb.Append(Options.GetNewLineText());
+
+        // Package include
+        var packHeaders = new List<string>()
+        {
+            $"\"{model.Name}_Structs.h\"",
+            $"\"{model.Name}_Classes.h\""
+        };
+        packHeaders.AddRange(model.PackageHeaderIncludes);
+        sb.Append(GenerateIncludes(packHeaders, indentLvl));
 
         return sb.ToString();
     }
@@ -251,20 +254,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         if (!Options.ResolveConditions)
             return true;
 
-        if (conditionsToResolve is null || conditionsToResolve.Count == 0)
-            return true;
-
-        // ! conditions
-        foreach (string condition in conditionsToResolve.Where(c => !string.IsNullOrWhiteSpace(c) && c.StartsWith("!")))
-        {
-            if (conditions.Any(gCondition => condition[1..] == gCondition))
-                return false;
-        }
-
-        // All conditions must to be fitted
-        return conditionsToResolve
-            .Where(c => !string.IsNullOrWhiteSpace(c) && !c.StartsWith("!"))
-            .All(conditions.Contains);
+        return LangPrint.ResolveConditions(conditions, conditionsToResolve);
     }
 
     public string GetFileHeader(IEnumerable<string> headingComment, string nameSpace, List<string> pragmas, List<string> includes, List<CppDefine> defines, string beforeNameSpace, out int indentLvl)
@@ -425,7 +415,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             nameSb.Append($" : {variable.Bitfield}");
 
         // Value
-        if (!string.IsNullOrWhiteSpace(variable.Value) && definition)
+        if ((!string.IsNullOrWhiteSpace(variable.Value) && definition) || (!definition && variable.Constexpr))
             nameSb.Append($" = {variable.Value}");
 
         nameSb.Append(';');
@@ -495,6 +485,14 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         // Comment
         if (!signature)
             sb.Append(GetMultiCommentString(func.Comment, baseIndentLvl, false));
+
+        // Template
+        if (func.TemplateParams.Count > 0)
+        {
+            sb.Append(Helper.GetIndent(baseIndentLvl));
+            sb.Append($"template<{string.Join(", ", func.TemplateParams)}>");
+            sb.Append(Options.GetNewLineText());
+        }
 
         sb.Append(Helper.GetIndent(baseIndentLvl));
 
@@ -623,7 +621,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
                 {
                     lastVarIsUnion = false;
                     baseIndentLvl--;
-                    sb.Append($"{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
+                    sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
                 }
 
                 // Print variable
@@ -635,7 +633,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             if (lastVarIsUnion)
             {
                 baseIndentLvl--;
-                sb.Append($"{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
+                sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
             }
 
             sb.Append(Options.GetNewLineText());
