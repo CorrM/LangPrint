@@ -55,9 +55,6 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         List<string> includes = model.CppIncludes.Append($"\"{model.Name}.h\"").ToList();
         sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, null, includes, null, model.CppBeforeNameSpace, out int indentLvl));
 
-        // Global functions
-        sb.Append(GenerateFunctions(model.Functions, null, false, indentLvl, model.Conditions));
-
         // Static variables
         IEnumerable<CppVariable> staticVars = validStructs
             .SelectMany(s => s.Variables)
@@ -65,7 +62,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
 
         if (staticVars.Any(v => v.Static))
         {
-            var methodsStr = new List<string>();
+            var varsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs Static Variables", indentLvl));
 
             foreach (CppStruct @struct in validStructs)
@@ -75,12 +72,15 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
                     .Select(v => GetVariableString(v, indentLvl, @struct, true))
                     .ToList();
 
-                methodsStr.AddRange(variables);
+                varsStr.AddRange(variables);
             }
 
-            sb.Append(Helper.JoinString(Options.GetNewLineText(), methodsStr));
+            sb.Append(Helper.JoinString(Options.GetNewLineText(), varsStr));
             sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
         }
+
+        // Global functions
+        sb.Append(GenerateFunctions(model.Functions, null, false, indentLvl, model.Conditions));
 
         // Structs functions
         if (validStructs.Any(s => s.Methods.Count > 0))
@@ -200,9 +200,6 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             };
         sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, null, includes, null, model.CppBeforeNameSpace, out int indentLvl));
 
-        // Global functions
-        sb.Append(GenerateFunctions(model.Functions, null, false, indentLvl, model.Conditions));
-
         // Static variables
         IEnumerable<CppVariable> staticVars = validStructs
             .SelectMany(s => s.Variables)
@@ -227,6 +224,9 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             sb.Append(Helper.JoinString(Options.GetNewLineText(), varsStr));
             sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
         }
+
+        // Global functions
+        sb.Append(GenerateFunctions(model.Functions, null, false, indentLvl, model.Conditions));
 
         // Structs functions
         if (validStructs.Any(s => s.Methods.Count > 0))
