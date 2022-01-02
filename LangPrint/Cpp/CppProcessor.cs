@@ -80,7 +80,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         }
 
         // Global functions
-        sb.Append(GenerateFunctions(model.Functions, null, false, indentLvl, model.Conditions));
+        sb.Append(GenerateFunctions(model.Functions.Where(f => f.TemplateParams.Count == 0), null, false, indentLvl, model.Conditions));
 
         // Structs functions
         if (validStructs.Any(s => s.Methods.Count > 0))
@@ -92,8 +92,8 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             {
                 int lvl = indentLvl;
                 IEnumerable<string> methodsToAdd = @struct.Methods
-                    .Where(m => !m.Friend)
                     .Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(model.Conditions, m.Conditions))
+                    .Where(m => !m.Friend && m.TemplateParams.Count == 0)
                     .Select(structMethod => GetFunctionString(structMethod, @struct, false, lvl, model.Conditions));
                 methodsStr.AddRange(methodsToAdd);
             }
@@ -233,7 +233,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         }
 
         // Global functions
-        sb.Append(GenerateFunctions(model.Functions, null, false, indentLvl, model.Conditions));
+        sb.Append(GenerateFunctions(model.Functions.Where(f => f.TemplateParams.Count == 0), null, false, indentLvl, model.Conditions));
 
         // Structs functions
         if (validStructs.Any(s => s.Methods.Count > 0))
@@ -245,8 +245,8 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             {
                 int lvl = indentLvl;
                 IEnumerable<string> methodsToAdd = @struct.Methods
-                    .Where(m => !m.Friend)
                     .Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(model.Conditions, m.Conditions))
+                    .Where(m => !m.Friend && m.TemplateParams.Count == 0)
                     .Select(structMethod => GetFunctionString(structMethod, @struct, false, lvl, model.Conditions));
                 methodsStr.AddRange(methodsToAdd);
             }
@@ -383,7 +383,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         var sb = new StringBuilder();
 
         // Comment
-        sb.Append(GetMultiCommentString(variable.Comment, baseIndentLvl, false));
+        sb.Append(GetMultiCommentString(variable.Comments, baseIndentLvl, false));
 
         sb.Append(Helper.GetIndent(baseIndentLvl));
 
@@ -453,7 +453,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         var sb = new StringBuilder();
 
         // Comment
-        sb.Append(GetMultiCommentString(@enum.Comment, baseIndentLvl, false));
+        sb.Append(GetMultiCommentString(@enum.Comments, baseIndentLvl, false));
 
         // Name
         sb.Append(@enum.IsClass
@@ -496,11 +496,16 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
+        bool forceAddBody = signature;
+        forceAddBody &= (parent is not null && parent.TemplateParams.Count > 0)
+                        || func.TemplateParams.Count > 0
+                        || func.Friend;
+
         var sb = new StringBuilder();
 
         // Comment
-        if (!signature || parent?.TemplateParams.Count > 0)
-            sb.Append(GetMultiCommentString(func.Comment, baseIndentLvl, false));
+        if (!signature)
+            sb.Append(GetMultiCommentString(func.Comments, baseIndentLvl, false));
 
         // Template
         if (func.TemplateParams.Count > 0)
@@ -529,7 +534,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             sb.Append($"{func.Type} ");
 
         // Name
-        if (parent is not null && !signature)
+        if (parent is not null && parent.TemplateParams.Count == 0 && !signature && func.TemplateParams.Count == 0 && !func.Friend)
             sb.Append($"{parent.Name}::");
 
         sb.Append(func.Name);
@@ -543,7 +548,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         if (func.Const)
             sb.Append(" const");
 
-        if (signature && parent?.TemplateParams.Count == 0 && !func.Friend)
+        if (signature && !forceAddBody)
         {
             sb.Append(';');
             return sb.ToString();
@@ -575,7 +580,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         var sb = new StringBuilder();
 
         // Comment
-        sb.Append(GetMultiCommentString(@struct.Comment, baseIndentLvl, false));
+        sb.Append(GetMultiCommentString(@struct.Comments, baseIndentLvl, false));
 
         // Template
         if (@struct.TemplateParams.Count > 0)

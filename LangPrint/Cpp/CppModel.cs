@@ -13,8 +13,8 @@ namespace LangPrint.Cpp;
 public class CppItemBase
 {
 
-    [JsonProperty("Comment")]
-    public List<string> Comment { get; set; } = new();
+    [JsonProperty("Comments")]
+    public List<string> Comments { get; set; } = new();
 
     [JsonProperty("InlineComment")]
     public string InlineComment { get; set; }
