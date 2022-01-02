@@ -88,8 +88,15 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             var methodsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs Functions", indentLvl));
 
-            foreach (CppStruct @struct in validStructs)
-                methodsStr.AddRange(@struct.Methods.Select(structMethod => GetFunctionString(structMethod, @struct, false, indentLvl, model.Conditions)));
+            foreach (CppStruct @struct in validStructs.Where(s => s.TemplateParams.Count == 0))
+            {
+                int lvl = indentLvl;
+                IEnumerable<string> methodsToAdd = @struct.Methods
+                    .Where(m => !m.Friend)
+                    .Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(model.Conditions, m.Conditions))
+                    .Select(structMethod => GetFunctionString(structMethod, @struct, false, lvl, model.Conditions));
+                methodsStr.AddRange(methodsToAdd);
+            }
 
             sb.Append(string.Join(Options.GetNewLineText(), methodsStr));
             sb.Append(Options.GetNewLineText());
@@ -234,9 +241,14 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             var methodsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs Functions", indentLvl));
 
-            foreach (CppStruct @struct in validStructs)
+            foreach (CppStruct @struct in validStructs.Where(s => s.TemplateParams.Count == 0))
             {
-                methodsStr.AddRange(@struct.Methods.Select(structMethod => GetFunctionString(structMethod, @struct, false, indentLvl, model.Conditions)));
+                int lvl = indentLvl;
+                IEnumerable<string> methodsToAdd = @struct.Methods
+                    .Where(m => !m.Friend)
+                    .Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(model.Conditions, m.Conditions))
+                    .Select(structMethod => GetFunctionString(structMethod, @struct, false, lvl, model.Conditions));
+                methodsStr.AddRange(methodsToAdd);
             }
 
             sb.Append(string.Join(Options.GetNewLineText(), methodsStr));
@@ -479,7 +491,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         return sb.ToString();
     }
 
-    public string GetFunctionString(CppFunction func, CppStruct parent, bool signature, int baseIndentLvl, List<string> conditions)
+    public string GetFunctionString(CppFunction func, CppStruct parent, bool signature, int baseIndentLvl, List<string> modelConditions)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
@@ -487,7 +499,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         var sb = new StringBuilder();
 
         // Comment
-        if (!signature)
+        if (!signature || parent?.TemplateParams.Count > 0)
             sb.Append(GetMultiCommentString(func.Comment, baseIndentLvl, false));
 
         // Template
@@ -524,14 +536,14 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
 
         // Params
         sb.Append('(');
-        sb.Append(string.Join(", ", func.Params.Where(p => ResolveConditions(conditions, p.Conditions)).Select(GetParamString)));
+        sb.Append(string.Join(", ", func.Params.Where(p => ResolveConditions(modelConditions, p.Conditions)).Select(GetParamString)));
         sb.Append(')');
 
         // Const
-        if (func.Const && signature)
+        if (func.Const)
             sb.Append(" const");
 
-        if (signature)
+        if (signature && parent?.TemplateParams.Count == 0 && !func.Friend)
         {
             sb.Append(';');
             return sb.ToString();
@@ -713,7 +725,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
 
         string ret = Helper.JoinString(
             Options.GetNewLineText(),
-            defines.Select(d => $"{d.Name} {d.Value}"),
+            defines.Select(d => d.Name + (string.IsNullOrWhiteSpace(d.Value) ? string.Empty : $" {d.Value}")),
             $"{Helper.GetIndent(baseIndentLvl)}#define ");
 
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
