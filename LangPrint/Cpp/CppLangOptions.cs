@@ -6,4 +6,5 @@ public class CppLangOptions : LangOptions
     public int VariableMemberTypePadSize { get; init; } = 0;
     public int InlineCommentPadSize { get; init; } = 0;
     public bool ResolveConditions { get; init; } = true;
+    public bool AddPackageHeaderToCppFile { get; init; } = true;
 }

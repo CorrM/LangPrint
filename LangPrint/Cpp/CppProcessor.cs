@@ -52,7 +52,12 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             .ToList();
 
         // File header
-        List<string> includes = model.CppIncludes.Append($"\"{model.Name}.h\"").ToList();
+        List<string> includes = model.CppIncludes;
+
+        // Don't change 'model.CppIncludes'
+        if (Options.AddPackageHeaderToCppFile)
+            includes = includes.Append($"\"{model.Name}.h\"").ToList();
+
         sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, null, includes, null, model.CppBeforeNameSpace, out int indentLvl));
 
         // Static variables
@@ -201,10 +206,12 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             .ToList();
 
         // File header
-        var includes = new List<string>(model.CppIncludes)
-            {
-                $"\"{model.Name}_Package.h\""
-            };
+        var includes = model.CppIncludes;
+
+        // Don't change 'model.CppIncludes'
+        if (Options.AddPackageHeaderToCppFile)
+            includes = includes.Append($"\"{model.Name}_Package.h\"").ToList();
+
         sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, null, includes, null, model.CppBeforeNameSpace, out int indentLvl));
 
         // Static variables
