@@ -206,7 +206,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             .ToList();
 
         // File header
-        var includes = model.CppIncludes;
+        List<string> includes = model.CppIncludes;
 
         // Don't change 'model.CppIncludes'
         if (Options.AddPackageHeaderToCppFile)
