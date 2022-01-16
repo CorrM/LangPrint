@@ -2,9 +2,9 @@
 
 public class CppLangOptions : LangOptions
 {
-    public bool GeneratePackageSyntax { get; init; } = false;
-    public int VariableMemberTypePadSize { get; init; } = 0;
-    public int InlineCommentPadSize { get; init; } = 0;
-    public bool ResolveConditions { get; init; } = true;
-    public bool AddPackageHeaderToCppFile { get; init; } = true;
+    public bool GeneratePackageSyntax { get; set; } = false;
+    public int VariableMemberTypePadSize { get; set; } = 0;
+    public int InlineCommentPadSize { get; set; } = 0;
+    public bool ResolveConditions { get; set; } = true;
+    public bool AddPackageHeaderToCppFile { get; set; } = true;
 }
