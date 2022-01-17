@@ -73,7 +73,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             foreach (CppStruct @struct in validStructs)
             {
                 List<string> variables = @struct.Variables
-                    .Where(v => v.Static && !v.Const && !v.Constexpr)
+                    .Where(v => v.Static && !v.Constexpr)
                     .Select(v => GetVariableString(v, indentLvl, @struct, true))
                     .ToList();
 
@@ -228,7 +228,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             {
                 List<string> variables = @struct.Variables
                     .Where(v => ResolveConditions(model.Conditions, v.Conditions))
-                    .Where(v => v.Static && !v.Const && !v.Constexpr)
+                    .Where(v => v.Static && !v.Constexpr)
                     .Select(v => GetVariableString(v, indentLvl, @struct, true))
                     .ToList();
 
