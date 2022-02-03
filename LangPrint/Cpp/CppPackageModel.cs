@@ -175,7 +175,7 @@ public class CppStruct : CppItemBase
     public List<CppFunction> Methods { get; set; } = new();
 }
 
-public class CppModel : ILangModel
+public class CppPackageModel : ILangModel
 {
     [JsonProperty("Lang")]
     public string Lang { get; private set; }

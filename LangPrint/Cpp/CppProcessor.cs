@@ -8,62 +8,62 @@ using Newtonsoft.Json;
 namespace LangPrint.Cpp;
 
 // Todo: add virtual functions to CppStruct
-public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
+public class CppProcessor : ILangProcessor<CppPackageModel, CppLangOptions>
 {
     public CppLangOptions Options { get; private set; }
 
-    private string MakeHeaderFile(CppModel model)
+    private string MakeHeaderFile(CppPackageModel package)
     {
         var sb = new StringBuilder();
 
         // File header
-        sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, model.Pragmas, model.Includes, model.Defines, model.BeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Pragmas, package.Includes, package.Defines, package.BeforeNameSpace, out int indentLvl));
 
         // Forwards
-        sb.Append(GenerateForwards(model.Forwards, indentLvl));
+        sb.Append(GenerateForwards(package.Forwards, indentLvl));
 
         // Constants
-        sb.Append(GenerateConstants(model.Constants, indentLvl, model.Conditions));
+        sb.Append(GenerateConstants(package.Constants, indentLvl, package.Conditions));
 
         // Variables
-        sb.Append(GenerateVariables(model.Variables, indentLvl, model.Conditions));
+        sb.Append(GenerateVariables(package.Variables, indentLvl, package.Conditions));
 
         // Global functions
-        sb.Append(GenerateFunctions(model.Functions, null, true, indentLvl, model.Conditions));
+        sb.Append(GenerateFunctions(package.Functions, null, true, indentLvl, package.Conditions));
 
         // Enums
-        sb.Append(GenerateEnums(model.Enums, indentLvl, model.Conditions));
+        sb.Append(GenerateEnums(package.Enums, indentLvl, package.Conditions));
 
         // Structs
-        sb.Append(GenerateStructs(model.Structs, indentLvl, model.Conditions));
+        sb.Append(GenerateStructs(package.Structs, indentLvl, package.Conditions));
 
         // File footer
-        sb.Append(GetFileFooter(model.NameSpace, model.AfterNameSpace, ref indentLvl));
+        sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
 
         return sb.ToString();
     }
 
-    private string MakeCppFile(CppModel model)
+    private string MakeCppFile(CppPackageModel package)
     {
         var sb = new StringBuilder();
 
-        List<CppStruct> validStructs = model.Structs
-            .Where(s => ResolveConditions(model.Conditions, s.Conditions))
+        List<CppStruct> validStructs = package.Structs
+            .Where(s => ResolveConditions(package.Conditions, s.Conditions))
             .ToList();
 
         // File header
-        List<string> includes = model.CppIncludes;
+        List<string> includes = package.CppIncludes;
 
-        // Don't change 'model.CppIncludes'
+        // Don't change 'package.CppIncludes'
         if (Options.AddPackageHeaderToCppFile)
-            includes = includes.Append($"\"{model.Name}.h\"").ToList();
+            includes = includes.Append($"\"{package.Name}.h\"").ToList();
 
-        sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, null, includes, null, model.CppBeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, null, includes, null, package.CppBeforeNameSpace, out int indentLvl));
 
         // Static variables
         IEnumerable<CppVariable> staticVars = validStructs
             .SelectMany(s => s.Variables)
-            .Where(v => ResolveConditions(model.Conditions, v.Conditions));
+            .Where(v => ResolveConditions(package.Conditions, v.Conditions));
 
         if (staticVars.Any(v => v.Static))
         {
@@ -85,7 +85,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         }
 
         // Global functions
-        sb.Append(GenerateFunctions(model.Functions.Where(f => f.TemplateParams.Count == 0), null, false, indentLvl, model.Conditions));
+        sb.Append(GenerateFunctions(package.Functions.Where(f => f.TemplateParams.Count == 0), null, false, indentLvl, package.Conditions));
 
         // Structs functions
         if (validStructs.Any(s => s.Methods.Count > 0))
@@ -97,9 +97,9 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             {
                 int lvl = indentLvl;
                 IEnumerable<string> methodsToAdd = @struct.Methods
-                    .Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(model.Conditions, m.Conditions))
+                    .Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(package.Conditions, m.Conditions))
                     .Where(m => !m.Friend && m.TemplateParams.Count == 0)
-                    .Select(structMethod => GetFunctionString(structMethod, @struct, false, lvl, model.Conditions));
+                    .Select(structMethod => GetFunctionString(structMethod, @struct, false, lvl, package.Conditions));
                 methodsStr.AddRange(methodsToAdd);
             }
 
@@ -108,12 +108,12 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         }
 
         // File footer
-        sb.Append(GetFileFooter(model.NameSpace, model.CppAfterNameSpace, ref indentLvl));
+        sb.Append(GetFileFooter(package.NameSpace, package.CppAfterNameSpace, ref indentLvl));
 
         return sb.ToString();
     }
 
-    private string MakeStructsFile(CppModel model)
+    private string MakeStructsFile(CppPackageModel package)
     {
         var sb = new StringBuilder();
 
@@ -123,24 +123,24 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             };
 
         // File header
-        sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, pragmas, null, null, model.BeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, pragmas, null, null, package.BeforeNameSpace, out int indentLvl));
 
         // Constants
-        sb.Append(GenerateConstants(model.Constants, indentLvl, model.Conditions));
+        sb.Append(GenerateConstants(package.Constants, indentLvl, package.Conditions));
 
         // Enums
-        sb.Append(GenerateEnums(model.Enums, indentLvl, model.Conditions));
+        sb.Append(GenerateEnums(package.Enums, indentLvl, package.Conditions));
 
         // Structs
-        sb.Append(GenerateStructs(model.Structs.Where(s => !s.IsClass), indentLvl, model.Conditions));
+        sb.Append(GenerateStructs(package.Structs.Where(s => !s.IsClass), indentLvl, package.Conditions));
 
         // File footer
-        sb.Append(GetFileFooter(model.NameSpace, model.AfterNameSpace, ref indentLvl));
+        sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
 
         return sb.ToString();
     }
 
-    private string MakeClassesFile(CppModel model)
+    private string MakeClassesFile(CppPackageModel package)
     {
         var sb = new StringBuilder();
 
@@ -150,74 +150,74 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             };
 
         // File header
-        sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, pragmas, null, null, model.BeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, pragmas, null, null, package.BeforeNameSpace, out int indentLvl));
 
         // Structs
-        sb.Append(GenerateStructs(model.Structs.Where(s => s.IsClass), indentLvl, model.Conditions));
+        sb.Append(GenerateStructs(package.Structs.Where(s => s.IsClass), indentLvl, package.Conditions));
 
         // File footer
-        sb.Append(GetFileFooter(model.NameSpace, model.AfterNameSpace, ref indentLvl));
+        sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
 
         return sb.ToString();
     }
 
-    private string MakePackageHeaderFile(CppModel model)
+    private string MakePackageHeaderFile(CppPackageModel package)
     {
         var sb = new StringBuilder();
 
         // File header
-        sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, model.Pragmas, model.Includes, model.Defines, model.BeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Pragmas, package.Includes, package.Defines, package.BeforeNameSpace, out int indentLvl));
 
         // Forwards
-        sb.Append(GenerateForwards(model.Forwards, indentLvl));
+        sb.Append(GenerateForwards(package.Forwards, indentLvl));
 
         // Constants
-        sb.Append(GenerateConstants(model.Constants, indentLvl, model.Conditions));
+        sb.Append(GenerateConstants(package.Constants, indentLvl, package.Conditions));
 
         // Variables
-        sb.Append(GenerateVariables(model.Variables, indentLvl, model.Conditions));
+        sb.Append(GenerateVariables(package.Variables, indentLvl, package.Conditions));
 
         // Global functions
-        sb.Append(GenerateFunctions(model.Functions, null, true, indentLvl, model.Conditions));
+        sb.Append(GenerateFunctions(package.Functions, null, true, indentLvl, package.Conditions));
 
         // File footer
-        sb.Append(GetFileFooter(model.NameSpace, model.AfterNameSpace, ref indentLvl));
+        sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
 
         sb.Append(Options.GetNewLineText());
 
         // Package include
         var packHeaders = new List<string>()
         {
-            $"\"{model.Name}_Structs.h\"",
-            $"\"{model.Name}_Classes.h\""
+            $"\"{package.Name}_Structs.h\"",
+            $"\"{package.Name}_Classes.h\""
         };
-        packHeaders.AddRange(model.PackageHeaderIncludes);
+        packHeaders.AddRange(package.PackageHeaderIncludes);
         sb.Append(GenerateIncludes(packHeaders, indentLvl));
 
         return sb.ToString();
     }
 
-    private string MakePackageCppFile(CppModel model)
+    private string MakePackageCppFile(CppPackageModel package)
     {
         var sb = new StringBuilder();
 
-        List<CppStruct> validStructs = model.Structs
-            .Where(s => ResolveConditions(model.Conditions, s.Conditions))
+        List<CppStruct> validStructs = package.Structs
+            .Where(s => ResolveConditions(package.Conditions, s.Conditions))
             .ToList();
 
         // File header
-        List<string> includes = model.CppIncludes;
+        List<string> includes = package.CppIncludes;
 
-        // Don't change 'model.CppIncludes'
+        // Don't change 'package.CppIncludes'
         if (Options.AddPackageHeaderToCppFile)
-            includes = includes.Append($"\"{model.Name}_Package.h\"").ToList();
+            includes = includes.Append($"\"{package.Name}_Package.h\"").ToList();
 
-        sb.Append(GetFileHeader(model.HeadingComment, model.NameSpace, null, includes, null, model.CppBeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, null, includes, null, package.CppBeforeNameSpace, out int indentLvl));
 
         // Static variables
         IEnumerable<CppVariable> staticVars = validStructs
             .SelectMany(s => s.Variables)
-            .Where(v => ResolveConditions(model.Conditions, v.Conditions));
+            .Where(v => ResolveConditions(package.Conditions, v.Conditions));
 
         if (staticVars.Any(v => v.Static))
         {
@@ -227,7 +227,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             foreach (CppStruct @struct in validStructs)
             {
                 List<string> variables = @struct.Variables
-                    .Where(v => ResolveConditions(model.Conditions, v.Conditions))
+                    .Where(v => ResolveConditions(package.Conditions, v.Conditions))
                     .Where(v => v.Static && !v.Constexpr)
                     .Select(v => GetVariableString(v, indentLvl, @struct, true))
                     .ToList();
@@ -240,7 +240,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         }
 
         // Global functions
-        sb.Append(GenerateFunctions(model.Functions.Where(f => f.TemplateParams.Count == 0), null, false, indentLvl, model.Conditions));
+        sb.Append(GenerateFunctions(package.Functions.Where(f => f.TemplateParams.Count == 0), null, false, indentLvl, package.Conditions));
 
         // Structs functions
         if (validStructs.Any(s => s.Methods.Count > 0))
@@ -252,9 +252,9 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
             {
                 int lvl = indentLvl;
                 IEnumerable<string> methodsToAdd = @struct.Methods
-                    .Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(model.Conditions, m.Conditions))
+                    .Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(package.Conditions, m.Conditions))
                     .Where(m => !m.Friend && m.TemplateParams.Count == 0)
-                    .Select(structMethod => GetFunctionString(structMethod, @struct, false, lvl, model.Conditions));
+                    .Select(structMethod => GetFunctionString(structMethod, @struct, false, lvl, package.Conditions));
                 methodsStr.AddRange(methodsToAdd);
             }
 
@@ -263,7 +263,7 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         }
 
         // File footer
-        sb.Append(GetFileFooter(model.NameSpace, model.CppAfterNameSpace, ref indentLvl));
+        sb.Append(GetFileFooter(package.NameSpace, package.CppAfterNameSpace, ref indentLvl));
 
         return sb.ToString();
     }
@@ -864,32 +864,32 @@ public class CppProcessor : ILangProcessor<CppModel, CppLangOptions>
         Options = options ?? new CppLangOptions();
     }
 
-    public CppModel ModelFromJson(string jsonData)
+    public CppPackageModel ModelFromJson(string jsonData)
     {
-        return JsonConvert.DeserializeObject<CppModel>(jsonData);
+        return JsonConvert.DeserializeObject<CppPackageModel>(jsonData);
     }
 
-    public Dictionary<string, string> GenerateFiles(CppModel cppModel)
+    public Dictionary<string, string> GenerateFiles(CppPackageModel cppPackage)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        cppModel.Conditions = cppModel.Conditions.Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
+        cppPackage.Conditions = cppPackage.Conditions.Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
 
         var ret = new Dictionary<string, string>();
 
         if (!Options.GeneratePackageSyntax)
         {
-            ret.Add($"{cppModel.Name}.h", MakeHeaderFile(cppModel));
-            ret.Add($"{cppModel.Name}.cpp", MakeCppFile(cppModel));
+            ret.Add($"{cppPackage.Name}.h", MakeHeaderFile(cppPackage));
+            ret.Add($"{cppPackage.Name}.cpp", MakeCppFile(cppPackage));
 
             return ret;
         }
 
-        ret.Add($"{cppModel.Name}_Structs.h", MakeStructsFile(cppModel));
-        ret.Add($"{cppModel.Name}_Classes.h", MakeClassesFile(cppModel));
-        ret.Add($"{cppModel.Name}_Package.h", MakePackageHeaderFile(cppModel));
-        ret.Add($"{cppModel.Name}_Package.cpp", MakePackageCppFile(cppModel));
+        ret.Add($"{cppPackage.Name}_Structs.h", MakeStructsFile(cppPackage));
+        ret.Add($"{cppPackage.Name}_Classes.h", MakeClassesFile(cppPackage));
+        ret.Add($"{cppPackage.Name}_Package.h", MakePackageHeaderFile(cppPackage));
+        ret.Add($"{cppPackage.Name}_Package.cpp", MakePackageCppFile(cppPackage));
 
         return ret;
     }
