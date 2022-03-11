@@ -2,7 +2,7 @@
 
 namespace LangPrint;
 
-public interface ILangProcessor<TModel, TOptions> where TModel : ILangModel where TOptions : LangOptions
+public interface ILangProcessor<TModel, TOptions> where TModel : ILang where TOptions : LangOptions
 {
     TOptions Options { get; }
     //TModel Model { get; }

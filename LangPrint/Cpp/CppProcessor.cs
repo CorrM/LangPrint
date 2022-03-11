@@ -8,11 +8,11 @@ using Newtonsoft.Json;
 namespace LangPrint.Cpp;
 
 // Todo: add virtual functions to CppStruct
-public class CppProcessor : ILangProcessor<CppPackageModel, CppLangOptions>
+public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 {
     public CppLangOptions Options { get; private set; }
 
-    private string MakeHeaderFile(CppPackageModel package)
+    private string MakeHeaderFile(CppPackage package)
     {
         var sb = new StringBuilder();
 
@@ -43,7 +43,7 @@ public class CppProcessor : ILangProcessor<CppPackageModel, CppLangOptions>
         return sb.ToString();
     }
 
-    private string MakeCppFile(CppPackageModel package)
+    private string MakeCppFile(CppPackage package)
     {
         var sb = new StringBuilder();
 
@@ -113,7 +113,7 @@ public class CppProcessor : ILangProcessor<CppPackageModel, CppLangOptions>
         return sb.ToString();
     }
 
-    private string MakeStructsFile(CppPackageModel package)
+    private string MakeStructsFile(CppPackage package)
     {
         var sb = new StringBuilder();
 
@@ -140,7 +140,7 @@ public class CppProcessor : ILangProcessor<CppPackageModel, CppLangOptions>
         return sb.ToString();
     }
 
-    private string MakeClassesFile(CppPackageModel package)
+    private string MakeClassesFile(CppPackage package)
     {
         var sb = new StringBuilder();
 
@@ -161,7 +161,7 @@ public class CppProcessor : ILangProcessor<CppPackageModel, CppLangOptions>
         return sb.ToString();
     }
 
-    private string MakePackageHeaderFile(CppPackageModel package)
+    private string MakePackageHeaderFile(CppPackage package)
     {
         var sb = new StringBuilder();
 
@@ -197,7 +197,7 @@ public class CppProcessor : ILangProcessor<CppPackageModel, CppLangOptions>
         return sb.ToString();
     }
 
-    private string MakePackageCppFile(CppPackageModel package)
+    private string MakePackageCppFile(CppPackage package)
     {
         var sb = new StringBuilder();
 
@@ -864,12 +864,12 @@ public class CppProcessor : ILangProcessor<CppPackageModel, CppLangOptions>
         Options = options ?? new CppLangOptions();
     }
 
-    public CppPackageModel ModelFromJson(string jsonData)
+    public CppPackage ModelFromJson(string jsonData)
     {
-        return JsonConvert.DeserializeObject<CppPackageModel>(jsonData);
+        return JsonConvert.DeserializeObject<CppPackage>(jsonData);
     }
 
-    public Dictionary<string, string> GenerateFiles(CppPackageModel cppPackage)
+    public Dictionary<string, string> GenerateFiles(CppPackage cppPackage)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
