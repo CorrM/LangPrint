@@ -111,7 +111,7 @@ public class CppFunction : CppItemBase
 }
 
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-public class CppVariable : CppItemBase
+public class CppField : CppItemBase
 {
     [JsonProperty("Type")]
     public string Type { get; set; }
@@ -168,8 +168,8 @@ public class CppStruct : CppItemBase
     [JsonProperty("Friends")]
     public List<string> Friends { get; set; } = new();
 
-    [JsonProperty("Variables")]
-    public List<CppVariable> Variables { get; set; } = new();
+    [JsonProperty("Fields")]
+    public List<CppField> Fields { get; set; } = new();
 
     [JsonProperty("Methods")]
     public List<CppFunction> Methods { get; set; } = new();
@@ -231,8 +231,8 @@ public class CppPackage : ILang
     [JsonProperty("Structs")]
     public List<CppStruct> Structs { get; set; } = new();
 
-    [JsonProperty("Variables")]
-    public List<CppVariable> Variables { get; set; } = new();
+    [JsonProperty("Fields")]
+    public List<CppField> Variables { get; set; } = new();
 
     [JsonProperty("Functions")]
     public List<CppFunction> Functions { get; set; } = new();

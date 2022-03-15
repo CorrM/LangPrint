@@ -25,7 +25,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         // Constants
         sb.Append(GenerateConstants(package.Constants, indentLvl, package.Conditions));
 
-        // Variables
+        // Fields
         sb.Append(GenerateVariables(package.Variables, indentLvl, package.Conditions));
 
         // Global functions
@@ -61,18 +61,18 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, null, includes, null, package.CppBeforeNameSpace, out int indentLvl));
 
         // Static variables
-        IEnumerable<CppVariable> staticVars = validStructs
-            .SelectMany(s => s.Variables)
+        IEnumerable<CppField> staticVars = validStructs
+            .SelectMany(s => s.Fields)
             .Where(v => ResolveConditions(package.Conditions, v.Conditions));
 
         if (staticVars.Any(v => v.Static))
         {
             var varsStr = new List<string>();
-            sb.Append(GetSectionHeading("Structs Static Variables", indentLvl));
+            sb.Append(GetSectionHeading("Structs Static Fields", indentLvl));
 
             foreach (CppStruct @struct in validStructs)
             {
-                List<string> variables = @struct.Variables
+                List<string> variables = @struct.Fields
                     .Where(v => v.Static && !v.Constexpr)
                     .Select(v => GetVariableString(v, indentLvl, @struct, true))
                     .ToList();
@@ -174,7 +174,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         // Constants
         sb.Append(GenerateConstants(package.Constants, indentLvl, package.Conditions));
 
-        // Variables
+        // Fields
         sb.Append(GenerateVariables(package.Variables, indentLvl, package.Conditions));
 
         // Global functions
@@ -215,18 +215,18 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, null, includes, null, package.CppBeforeNameSpace, out int indentLvl));
 
         // Static variables
-        IEnumerable<CppVariable> staticVars = validStructs
-            .SelectMany(s => s.Variables)
+        IEnumerable<CppField> staticVars = validStructs
+            .SelectMany(s => s.Fields)
             .Where(v => ResolveConditions(package.Conditions, v.Conditions));
 
         if (staticVars.Any(v => v.Static))
         {
             var varsStr = new List<string>();
-            sb.Append(GetSectionHeading("Structs Static Variables", indentLvl));
+            sb.Append(GetSectionHeading("Structs Static Fields", indentLvl));
 
             foreach (CppStruct @struct in validStructs)
             {
-                List<string> variables = @struct.Variables
+                List<string> variables = @struct.Fields
                     .Where(v => ResolveConditions(package.Conditions, v.Conditions))
                     .Where(v => v.Static && !v.Constexpr)
                     .Select(v => GetVariableString(v, indentLvl, @struct, true))
@@ -382,7 +382,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return $"{parameter.Type} {parameter.Name}";
     }
 
-    public string GetVariableString(CppVariable variable, int baseIndentLvl, CppStruct parent = null, bool definition = false)
+    public string GetVariableString(CppField field, int baseIndentLvl, CppStruct parent = null, bool definition = false)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
@@ -390,32 +390,32 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         var sb = new StringBuilder();
 
         // Comment
-        sb.Append(GetMultiCommentString(variable.Comments, baseIndentLvl, false));
+        sb.Append(GetMultiCommentString(field.Comments, baseIndentLvl, false));
 
         sb.Append(Helper.GetIndent(baseIndentLvl));
 
         // Extern
-        if (!definition && variable.Extern)
+        if (!definition && field.Extern)
             sb.Append("extern ");
 
         // Static
-        if (!definition && variable.Static)
+        if (!definition && field.Static)
             sb.Append("static ");
 
         // Friend
-        if (!definition && variable.Friend)
+        if (!definition && field.Friend)
             sb.Append("friend ");
 
         // Const
-        if (variable.Const)
+        if (field.Const)
             sb.Append("const ");
 
         // Constexpr
-        if (!definition && variable.Constexpr)
+        if (!definition && field.Constexpr)
             sb.Append("constexpr ");
 
         // Type
-        sb.Append(variable.Type);
+        sb.Append(field.Type);
         string prefix = sb.ToString();
         sb.Clear();
         sb.Append($"{prefix.PadRight(Options.VariableMemberTypePadSize)} ");
@@ -427,25 +427,25 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
             nameSb.Append($"{parent.Name}::");
 
         // Name
-        nameSb.Append(variable.Name);
+        nameSb.Append(field.Name);
 
         // ArrayDim
-        if (!string.IsNullOrWhiteSpace(variable.ArrayDim))
-            nameSb.Append($"[{variable.ArrayDim}]");
+        if (!string.IsNullOrWhiteSpace(field.ArrayDim))
+            nameSb.Append($"[{field.ArrayDim}]");
 
         // Bitfield
-        else if (!string.IsNullOrWhiteSpace(variable.Bitfield))
-            nameSb.Append($" : {variable.Bitfield}");
+        else if (!string.IsNullOrWhiteSpace(field.Bitfield))
+            nameSb.Append($" : {field.Bitfield}");
 
         // Value
-        if ((!string.IsNullOrWhiteSpace(variable.Value) && definition) || (!definition && variable.Constexpr))
-            nameSb.Append($" = {variable.Value}");
+        if ((!string.IsNullOrWhiteSpace(field.Value) && definition) || (!definition && field.Constexpr))
+            nameSb.Append($" = {field.Value}");
 
         nameSb.Append(';');
 
         // Inline comment
-        if (!string.IsNullOrEmpty(variable.InlineComment))
-            sb.Append(nameSb.ToString().PadRight(Options.InlineCommentPadSize) + $" // {variable.InlineComment}");
+        if (!string.IsNullOrEmpty(field.InlineComment))
+            sb.Append(nameSb.ToString().PadRight(Options.InlineCommentPadSize) + $" // {field.InlineComment}");
         else
             sb.Append(nameSb);
 
@@ -617,18 +617,18 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         sb.Append($"{Helper.GetIndent(baseIndentLvl)}{{{Options.GetNewLineText()}");
         baseIndentLvl++;
 
-        // Variables
-        if (@struct.Variables.Count > 0)
+        // Fields
+        if (@struct.Fields.Count > 0)
         {
             bool lastVarIsPrivate = false;
             bool lastVarIsUnion = false;
-            List<CppVariable> variables = @struct.Variables.Where(v => !string.IsNullOrWhiteSpace(v.Name) && ResolveConditions(conditions, v.Conditions)).ToList();
+            List<CppField> variables = @struct.Fields.Where(v => !string.IsNullOrWhiteSpace(v.Name) && ResolveConditions(conditions, v.Conditions)).ToList();
 
             // Force write "private" or "public"
             if (variables.Count > 0)
                 lastVarIsPrivate = !variables.First().Private;
 
-            foreach (CppVariable structVar in variables)
+            foreach (CppField structVar in variables)
             {
                 // Private or Public
                 if (structVar.Private != lastVarIsPrivate)
@@ -656,7 +656,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
                     sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
                 }
 
-                // Print variable
+                // Print field
                 sb.Append(GetVariableString(structVar, baseIndentLvl));
                 sb.Append(Options.GetNewLineText());
             }
@@ -754,12 +754,12 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateVariables(IEnumerable<CppVariable> variables, int baseIndentLvl, List<string> conditions)
+    public string GenerateVariables(IEnumerable<CppField> variables, int baseIndentLvl, List<string> conditions)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        List<CppVariable> vars = variables
+        List<CppField> vars = variables
             .Where(v => !string.IsNullOrWhiteSpace(v.Name) && !string.IsNullOrWhiteSpace(v.Type) && ResolveConditions(conditions, v.Conditions))
             .ToList();
 
@@ -769,7 +769,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         string ret = Helper.JoinString(Options.GetNewLineText(), vars.Select(v => GetVariableString(v, baseIndentLvl)), Helper.GetIndent(baseIndentLvl));
 
         if (Options.PrintSectionName)
-            ret = GetSectionHeading("Variables", baseIndentLvl) + ret;
+            ret = GetSectionHeading("Fields", baseIndentLvl) + ret;
 
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
