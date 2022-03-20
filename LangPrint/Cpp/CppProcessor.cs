@@ -482,13 +482,33 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         baseIndentLvl++;
 
         // Values
-        int biggestName = @enum.Values.Max(ev => ev.Name.Length);
-        string values = Helper.JoinString(
-            "," + Options.GetNewLineText(),
-            @enum.Values.Select(ev => $"{ev.Name.PadRight(biggestName)} = {ev.Value}"),
-            Helper.GetIndent(baseIndentLvl));
+        if (@enum.Values.Count > 0)
+        {
+            int biggestName = @enum.Values.Max(ev => ev.Name.Length);
+            IEnumerable<string> vals = @enum.Values.Select(ev =>
+            {
+                string value;
+                try
+                {
+                    long iValue = Convert.ToInt64(ev.Value);
+                    value = $"0x{iValue:X16}";
+                }
+                catch
+                {
+                    value = ev.Value;
+                }
 
-        sb.Append(values);
+                return $"{ev.Name.PadRight(biggestName)} = {value}";
+            });
+
+            string values = Helper.JoinString(
+                "," + Options.GetNewLineText(),
+                vals,
+                Helper.GetIndent(baseIndentLvl));
+
+            sb.Append(values);
+        }
+
         sb.Append(Options.GetNewLineText());
 
         // Close

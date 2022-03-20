@@ -64,6 +64,9 @@ public class CppEnum : CppItemBase
 
     [JsonProperty("Values")]
     public List<CppNameValue> Values { get; set; } = new();
+
+    [JsonProperty("HexValues")]
+    public bool HexValues { get; set; }
 }
 
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
