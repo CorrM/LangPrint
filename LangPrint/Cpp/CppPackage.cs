@@ -165,6 +165,9 @@ public class CppStruct : CppItemBase
     [JsonProperty("IsClass")]
     public bool IsClass { get; set; }
 
+    [JsonProperty("IsUnion")]
+    public bool IsUnion { get; set; }
+
     [JsonProperty("TemplateParams")]
     public List<string> TemplateParams { get; set; } = new();
 
@@ -200,6 +203,9 @@ public class CppPackage : ILang
 
     [JsonProperty("HeadingComment")]
     public List<string> HeadingComment { get; set; } = new();
+
+    [JsonProperty("TypeDefs")]
+    public List<string> TypeDefs { get; set; } = new();
 
     [JsonProperty("Defines")]
     public List<CppDefine> Defines { get; set; } = new();

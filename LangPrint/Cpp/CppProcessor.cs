@@ -17,7 +17,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         var sb = new StringBuilder();
 
         // File header
-        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Pragmas, package.Includes, package.Defines, package.BeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Pragmas, package.Includes, package.Defines, package.TypeDefs, package.BeforeNameSpace, out int indentLvl));
 
         // Forwards
         sb.Append(GenerateForwards(package.Forwards, indentLvl));
@@ -58,7 +58,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         if (Options.AddPackageHeaderToCppFile)
             includes = includes.Append($"\"{package.Name}.h\"").ToList();
 
-        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, null, includes, null, package.CppBeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, null, includes, null, null, package.CppBeforeNameSpace, out int indentLvl));
 
         // Static variables
         IEnumerable<CppField> staticVars = validStructs
@@ -118,12 +118,12 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         var sb = new StringBuilder();
 
         var pragmas = new List<string>()
-            {
-                "once"
-            };
+        {
+            "once"
+        };
 
         // File header
-        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, pragmas, null, null, package.BeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, pragmas, null, null, null, package.BeforeNameSpace, out int indentLvl));
 
         // Constants
         sb.Append(GenerateConstants(package.Constants, indentLvl, package.Conditions));
@@ -145,12 +145,12 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         var sb = new StringBuilder();
 
         var pragmas = new List<string>()
-            {
-                "once"
-            };
+        {
+            "once"
+        };
 
         // File header
-        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, pragmas, null, null, package.BeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, pragmas, null, null, null, package.BeforeNameSpace, out int indentLvl));
 
         // Structs
         sb.Append(GenerateStructs(package.Structs.Where(s => s.IsClass), indentLvl, package.Conditions));
@@ -166,7 +166,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         var sb = new StringBuilder();
 
         // File header
-        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Pragmas, package.Includes, package.Defines, package.BeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Pragmas, package.Includes, package.Defines, package.TypeDefs, package.BeforeNameSpace, out int indentLvl));
 
         // Forwards
         sb.Append(GenerateForwards(package.Forwards, indentLvl));
@@ -212,7 +212,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         if (Options.AddPackageHeaderToCppFile)
             includes = includes.Append($"\"{package.Name}_Package.h\"").ToList();
 
-        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, null, includes, null, package.CppBeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, null, includes, null, null, package.CppBeforeNameSpace, out int indentLvl));
 
         // Static variables
         IEnumerable<CppField> staticVars = validStructs
@@ -276,7 +276,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return LangPrint.ResolveConditions(conditions, conditionsToResolve);
     }
 
-    public string GetFileHeader(IEnumerable<string> headingComment, string nameSpace, List<string> pragmas, List<string> includes, List<CppDefine> defines, string beforeNameSpace, out int indentLvl)
+    public string GetFileHeader(IEnumerable<string> headingComment, string nameSpace, List<string> pragmas, List<string> includes, List<CppDefine> defines, List<string> typeDefs, string beforeNameSpace, out int indentLvl)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
@@ -298,6 +298,10 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         // Defines
         if (defines?.Count > 0)
             sb.Append(GenerateDefines(defines, indentLvl));
+
+        // TypeDefs
+        if (typeDefs?.Count > 0)
+            sb.Append(GenerateTypeDefs(typeDefs, indentLvl));
 
         // BeforeNameSpace
         if (!string.IsNullOrWhiteSpace(beforeNameSpace))
@@ -487,16 +491,9 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
             int biggestName = @enum.Values.Max(ev => ev.Name.Length);
             IEnumerable<string> vals = @enum.Values.Select(ev =>
             {
-                string value;
-                try
-                {
-                    long iValue = Convert.ToInt64(ev.Value);
-                    value = $"0x{iValue:X16}";
-                }
-                catch
-                {
-                    value = ev.Value;
-                }
+                string value = long.TryParse(ev.Value, out long iValue) && iValue >= 0
+                    ? $"0x{iValue:X16}"
+                    : ev.Value;
 
                 return $"{ev.Name.PadRight(biggestName)} = {value}";
             });
@@ -618,7 +615,12 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 
         // Kind
         sb.Append(Helper.GetIndent(baseIndentLvl));
-        sb.Append(@struct.IsClass ? "class " : "struct ");
+        if (@struct.IsClass)
+            sb.Append("class ");
+        else if (@struct.IsUnion)
+            sb.Append("union ");
+        else
+            sb.Append("struct ");
 
         // Name
         sb.Append(@struct.Name);
@@ -634,12 +636,14 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         sb.Append(Options.GetNewLineText());
 
         // Open struct scope
-        sb.Append($"{Helper.GetIndent(baseIndentLvl)}{{{Options.GetNewLineText()}");
+        sb.Append($"{Helper.GetIndent(baseIndentLvl)}{{");
         baseIndentLvl++;
 
         // Fields
         if (@struct.Fields.Count > 0)
         {
+            sb.Append(Options.GetNewLineText());
+
             bool lastVarIsPrivate = false;
             bool lastVarIsUnion = false;
             List<CppField> variables = @struct.Fields.Where(v => !string.IsNullOrWhiteSpace(v.Name) && ResolveConditions(conditions, v.Conditions)).ToList();
@@ -687,20 +691,21 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
                 baseIndentLvl--;
                 sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
             }
-
-            sb.Append(Options.GetNewLineText());
         }
 
         // Friends
         if (@struct.Friends.Count > 0)
         {
-            sb.Append(Helper.JoinString(Options.GetNewLineText(), @struct.Friends, $"{Helper.GetIndent(baseIndentLvl)}friend ", ";"));
             sb.Append(Options.GetNewLineText());
+
+            sb.Append(Helper.JoinString(Options.GetNewLineText(), @struct.Friends, $"{Helper.GetIndent(baseIndentLvl)}friend ", ";"));
         }
 
         // Methods
         if (@struct.Methods.Count > 0)
         {
+            sb.Append(Options.GetNewLineText());
+
             bool lastMethodIsPrivate = false;
             List<CppFunction> methods = @struct.Methods.Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(conditions, m.Conditions)).ToList();
 
@@ -763,6 +768,20 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
+    public string GenerateTypeDefs(IEnumerable<string> typeDefs, int baseIndentLvl)
+    {
+        if (Options is null)
+            throw new Exception($"Call '{nameof(Init)}' function first");
+
+        string ret = Helper.JoinString(
+            Options.GetNewLineText(),
+            typeDefs,
+            $"{Helper.GetIndent(baseIndentLvl)}typedef ",
+            ";");
+
+        return Helper.FinalizeSection(ret, Options.GetNewLineText());
+    }
+
     public string GenerateForwards(IEnumerable<string> forwards, int baseIndentLvl)
     {
         if (Options is null)
@@ -770,6 +789,9 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 
         string ret = Helper.JoinString(Options.GetNewLineText(), forwards, Helper.GetIndent(baseIndentLvl), ";");
         ret += Options.GetNewLineText();
+
+        if (Options.PrintSectionName)
+            ret = GetSectionHeading("Forwards", baseIndentLvl) + ret;
 
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
