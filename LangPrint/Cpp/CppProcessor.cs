@@ -25,8 +25,8 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         // Constants
         sb.Append(GenerateConstants(package.Constants, indentLvl, package.Conditions));
 
-        // Fields
-        sb.Append(GenerateVariables(package.Variables, indentLvl, package.Conditions));
+        // Global fields
+        sb.Append(GenerateFields(package.Fields, true, indentLvl, package.Conditions));
 
         // Global functions
         sb.Append(GenerateFunctions(package.Functions, null, true, indentLvl, package.Conditions));
@@ -60,7 +60,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 
         sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, null, includes, null, null, package.CppBeforeNameSpace, out int indentLvl));
 
-        // Static variables
+        // Static fields
         IEnumerable<CppField> staticVars = validStructs
             .SelectMany(s => s.Fields)
             .Where(v => ResolveConditions(package.Conditions, v.Conditions));
@@ -74,7 +74,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
             {
                 List<string> variables = @struct.Fields
                     .Where(v => v.Static && !v.Constexpr)
-                    .Select(v => GetVariableString(v, indentLvl, @struct, true))
+                    .Select(v => GetFieldString(v, false, indentLvl, @struct))
                     .ToList();
 
                 varsStr.AddRange(variables);
@@ -84,6 +84,9 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
             sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
         }
 
+        // Global fields
+        sb.Append(GenerateFields(package.Fields, false, indentLvl, package.Conditions));
+
         // Global functions
         sb.Append(GenerateFunctions(package.Functions.Where(f => f.TemplateParams.Count == 0), null, false, indentLvl, package.Conditions));
 
@@ -91,7 +94,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         if (validStructs.Any(s => s.Methods.Count > 0))
         {
             var methodsStr = new List<string>();
-            sb.Append(GetSectionHeading("Structs Functions", indentLvl));
+            sb.Append(GetSectionHeading("Structs functions", indentLvl));
 
             foreach (CppStruct @struct in validStructs.Where(s => s.TemplateParams.Count == 0))
             {
@@ -174,8 +177,8 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         // Constants
         sb.Append(GenerateConstants(package.Constants, indentLvl, package.Conditions));
 
-        // Fields
-        sb.Append(GenerateVariables(package.Variables, indentLvl, package.Conditions));
+        // Global fields
+        sb.Append(GenerateFields(package.Fields, true, indentLvl, package.Conditions));
 
         // Global functions
         sb.Append(GenerateFunctions(package.Functions, null, true, indentLvl, package.Conditions));
@@ -214,7 +217,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 
         sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, null, includes, null, null, package.CppBeforeNameSpace, out int indentLvl));
 
-        // Static variables
+        // Static fields
         IEnumerable<CppField> staticVars = validStructs
             .SelectMany(s => s.Fields)
             .Where(v => ResolveConditions(package.Conditions, v.Conditions));
@@ -229,7 +232,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
                 List<string> variables = @struct.Fields
                     .Where(v => ResolveConditions(package.Conditions, v.Conditions))
                     .Where(v => v.Static && !v.Constexpr)
-                    .Select(v => GetVariableString(v, indentLvl, @struct, true))
+                    .Select(v => GetFieldString(v, false, indentLvl, @struct))
                     .ToList();
 
                 varsStr.AddRange(variables);
@@ -238,6 +241,9 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
             sb.Append(Helper.JoinString(Options.GetNewLineText(), varsStr));
             sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
         }
+
+        // Global fields
+        sb.Append(GenerateFields(package.Fields, false, indentLvl, package.Conditions));
 
         // Global functions
         sb.Append(GenerateFunctions(package.Functions.Where(f => f.TemplateParams.Count == 0), null, false, indentLvl, package.Conditions));
@@ -386,7 +392,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return $"{parameter.Type} {parameter.Name}";
     }
 
-    public string GetVariableString(CppField field, int baseIndentLvl, CppStruct parent = null, bool definition = false)
+    public string GetFieldString(CppField field, bool declaration, int baseIndentLvl, CppStruct parent = null)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
@@ -399,15 +405,15 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         sb.Append(Helper.GetIndent(baseIndentLvl));
 
         // Extern
-        if (!definition && field.Extern)
+        if (declaration && field.Extern)
             sb.Append("extern ");
 
         // Static
-        if (!definition && field.Static)
+        if (declaration && field.Static)
             sb.Append("static ");
 
         // Friend
-        if (!definition && field.Friend)
+        if (declaration && field.Friend)
             sb.Append("friend ");
 
         // Const
@@ -415,7 +421,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
             sb.Append("const ");
 
         // Constexpr
-        if (!definition && field.Constexpr)
+        if (declaration && field.Constexpr)
             sb.Append("constexpr ");
 
         // Type
@@ -427,7 +433,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         var nameSb = new StringBuilder();
 
         // Parent name
-        if (definition && parent is not null)
+        if (!declaration && parent is not null)
             nameSb.Append($"{parent.Name}::");
 
         // Name
@@ -442,7 +448,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
             nameSb.Append($" : {field.Bitfield}");
 
         // Value
-        if ((!string.IsNullOrWhiteSpace(field.Value) && definition) || (!definition && field.Constexpr))
+        if ((!string.IsNullOrWhiteSpace(field.Value) && !declaration) || (declaration && field.Constexpr))
             nameSb.Append($" = {field.Value}");
 
         nameSb.Append(';');
@@ -515,12 +521,12 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return sb.ToString();
     }
 
-    public string GetFunctionString(CppFunction func, CppStruct parent, bool signature, int baseIndentLvl, List<string> modelConditions)
+    public string GetFunctionString(CppFunction func, CppStruct parent, bool declaration, int baseIndentLvl, List<string> modelConditions)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        bool forceAddBody = signature;
+        bool forceAddBody = declaration;
         forceAddBody &= (parent is not null && parent.TemplateParams.Count > 0)
                         || func.TemplateParams.Count > 0
                         || func.Friend;
@@ -528,7 +534,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         var sb = new StringBuilder();
 
         // Comment
-        if (!signature)
+        if (!declaration)
             sb.Append(GetMultiCommentString(func.Comments, baseIndentLvl, false));
 
         // Template
@@ -542,15 +548,15 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         sb.Append(Helper.GetIndent(baseIndentLvl));
 
         // Static
-        if (signature && func.Static)
+        if (declaration && func.Static)
             sb.Append("static ");
 
         // Friend
-        if (signature && func.Friend)
+        if (declaration && func.Friend)
             sb.Append("friend ");
 
         // Inline
-        if (func.Inline && signature)
+        if (func.Inline && declaration)
             sb.Append("inline ");
 
         // Type
@@ -558,7 +564,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
             sb.Append($"{func.Type} ");
 
         // Name
-        if (parent is not null && parent.TemplateParams.Count == 0 && !signature && func.TemplateParams.Count == 0 && !func.Friend)
+        if (parent is not null && parent.TemplateParams.Count == 0 && !declaration && func.TemplateParams.Count == 0 && !func.Friend)
             sb.Append($"{parent.Name}::");
 
         sb.Append(func.Name);
@@ -572,7 +578,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         if (func.Const)
             sb.Append(" const");
 
-        if (signature && !forceAddBody)
+        if (declaration && !forceAddBody)
         {
             sb.Append(';');
             return sb.ToString();
@@ -622,6 +628,10 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         else
             sb.Append("struct ");
 
+        // Aligns
+        if (@struct.Alignas > 0)
+            sb.Append($"__declspec(align({@struct.Alignas})) ");
+
         // Name
         sb.Append(@struct.Name);
 
@@ -663,6 +673,14 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
                     sb.Append(Options.GetNewLineText());
                 }
 
+                // Close union
+                if (structVar.ForceUnion && lastVarIsUnion || !structVar.Union && lastVarIsUnion)
+                {
+                    lastVarIsUnion = false;
+                    baseIndentLvl--;
+                    sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
+                }
+
                 // Open union
                 if (structVar.Union && !lastVarIsUnion)
                 {
@@ -672,16 +690,8 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
                     baseIndentLvl++;
                 }
 
-                // Close union
-                else if (!structVar.Union && lastVarIsUnion)
-                {
-                    lastVarIsUnion = false;
-                    baseIndentLvl--;
-                    sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
-                }
-
                 // Print field
-                sb.Append(GetVariableString(structVar, baseIndentLvl));
+                sb.Append(GetFieldString(structVar, true, baseIndentLvl));
                 sb.Append(Options.GetNewLineText());
             }
 
@@ -796,27 +806,27 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateVariables(IEnumerable<CppField> variables, int baseIndentLvl, List<string> conditions)
+    public string GenerateFields(IEnumerable<CppField> fields, bool declarationOnly, int baseIndentLvl, List<string> conditions)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        List<CppField> vars = variables
+        List<CppField> vars = fields
             .Where(v => !string.IsNullOrWhiteSpace(v.Name) && !string.IsNullOrWhiteSpace(v.Type) && ResolveConditions(conditions, v.Conditions))
             .ToList();
 
         if (vars.Count == 0)
             return string.Empty;
 
-        string ret = Helper.JoinString(Options.GetNewLineText(), vars.Select(v => GetVariableString(v, baseIndentLvl)), Helper.GetIndent(baseIndentLvl));
+        string ret = string.Join(Options.GetNewLineText(), vars.Select(v => GetFieldString(v, declarationOnly, baseIndentLvl)));
 
         if (Options.PrintSectionName)
-            ret = GetSectionHeading("Fields", baseIndentLvl) + ret;
+            ret = GetSectionHeading("Global fields", baseIndentLvl) + ret;
 
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateFunctions(IEnumerable<CppFunction> functions, CppStruct parent, bool signatureOnly, int baseIndentLvl, List<string> conditions)
+    public string GenerateFunctions(IEnumerable<CppFunction> functions, CppStruct parent, bool declarationOnly, int baseIndentLvl, List<string> conditions)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
@@ -828,10 +838,10 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         if (funcs.Count == 0)
             return string.Empty;
 
-        string ret = string.Join(Options.GetNewLineText(), funcs.Select(f => GetFunctionString(f, parent, signatureOnly, baseIndentLvl, conditions)));
+        string ret = string.Join(Options.GetNewLineText(), funcs.Select(f => GetFunctionString(f, parent, declarationOnly, baseIndentLvl, conditions)));
 
         if (Options.PrintSectionName)
-            ret = GetSectionHeading("Global Functions", baseIndentLvl) + ret;
+            ret = GetSectionHeading("Global functions", baseIndentLvl) + ret;
 
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }

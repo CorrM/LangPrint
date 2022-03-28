@@ -151,6 +151,9 @@ public class CppField : CppItemBase
 
     [JsonProperty("Union")]
     public bool Union { get; set; }
+
+    [JsonProperty("ForceUnion")]
+    public bool ForceUnion { get; set; }
 }
 
 [DebuggerDisplay("{" + nameof(Name) + "}")]
@@ -161,6 +164,9 @@ public class CppStruct : CppItemBase
 
     [JsonProperty("Supers")]
     public List<string> Supers { get; set; } = new();
+
+    [JsonProperty("Alignas")]
+    public int Alignas { get; set; }
 
     [JsonProperty("IsClass")]
     public bool IsClass { get; set; }
@@ -241,7 +247,7 @@ public class CppPackage : ILang
     public List<CppStruct> Structs { get; set; } = new();
 
     [JsonProperty("Fields")]
-    public List<CppField> Variables { get; set; } = new();
+    public List<CppField> Fields { get; set; } = new();
 
     [JsonProperty("Functions")]
     public List<CppFunction> Functions { get; set; } = new();
