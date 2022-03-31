@@ -91,7 +91,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         sb.Append(GenerateFunctions(package.Functions.Where(f => f.TemplateParams.Count == 0), null, false, indentLvl, package.Conditions));
 
         // Structs functions
-        if (validStructs.Any(s => s.Methods.Count > 0))
+        if (validStructs.Any(s => s.Methods.Count > 0 && s.TemplateParams.Count == 0))
         {
             var methodsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs functions", indentLvl));
@@ -249,7 +249,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         sb.Append(GenerateFunctions(package.Functions.Where(f => f.TemplateParams.Count == 0), null, false, indentLvl, package.Conditions));
 
         // Structs functions
-        if (validStructs.Any(s => s.Methods.Count > 0))
+        if (validStructs.Any(s => s.Methods.Count > 0 && s.TemplateParams.Count == 0))
         {
             var methodsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs Functions", indentLvl));
@@ -797,7 +797,11 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        string ret = Helper.JoinString(Options.GetNewLineText(), forwards, Helper.GetIndent(baseIndentLvl), ";");
+        IEnumerable<string> forwardsList = forwards.ToList();
+        if (!forwardsList.Any())
+            return string.Empty;
+
+        string ret = Helper.JoinString(Options.GetNewLineText(), forwardsList, Helper.GetIndent(baseIndentLvl), ";");
         ret += Options.GetNewLineText();
 
         if (Options.PrintSectionName)
