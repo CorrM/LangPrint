@@ -1,7 +1,7 @@
 # LangPrint
 
 
-# Usage
+## Usage
 
 ```csharp
 // Initialize
