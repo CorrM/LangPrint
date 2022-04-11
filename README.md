@@ -35,4 +35,7 @@ var cppPackage = new CppPackage()
 
 // Generate FileName:FileContect dictionary
 Dictionary<string, string> cppFiles = _cppProcessor.GenerateFiles(cppPackage);
+
+// OR
+Dictionary<string, string> cppFiles = _cppProcessor.GenerateFiles(_cppProcessor.ModelFromJson("JSON_STRING"));
 ```
