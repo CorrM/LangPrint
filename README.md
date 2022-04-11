@@ -17,7 +17,7 @@ var cppOpts = new CppLangOptions()
 };
 _cppProcessor.Init(cppOpts);
 
-// Generate
+// Make package content
 var cppPackage = new CppPackage()
 {
     Name = "PackageName",
