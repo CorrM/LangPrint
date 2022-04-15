@@ -20,7 +20,7 @@ namespace LangPrint.Tests
         [Fact]
         public void Test_OneFileGenerate()
         {
-            string file = File.ReadAllText(@"D:\Projects\CheatGear\src\CheatGear\Settings\Engines\UnrealEngine\Packages\BasicTypes.json");
+            string file = File.ReadAllText(Path.Combine(Environment.CurrentDirectory, "CppExample.json"));
 
             var cppOpts = new CppLangOptions()
             {
@@ -29,9 +29,11 @@ namespace LangPrint.Tests
             };
 
             var cpp = new CppProcessor();
-            cpp.Init(file, cppOpts);
+            cpp.Init(cppOpts);
 
-            Dictionary<string, string> cppGen = cpp.GenerateFiles();
+            CppPackage package = cpp.ModelFromJson(file);
+
+            Dictionary<string, string> cppGen = cpp.GenerateFiles(package);
             string savePath = Path.Combine(Environment.CurrentDirectory, "Test_OneFileGenerate");
             if (!Directory.Exists(savePath))
                 Directory.CreateDirectory(savePath);
@@ -47,7 +49,7 @@ namespace LangPrint.Tests
         [Fact]
         public void Test_PackageSyntaxGenerate()
         {
-            string file = File.ReadAllText(@"D:\Projects\CheatGear\src\CheatGear\Settings\Engines\UnrealEngine\Packages\BasicTypes.json");
+            string file = File.ReadAllText(Path.Combine(Environment.CurrentDirectory, "CppExample.json"));
 
             var cppOpts = new CppLangOptions()
             {
@@ -56,9 +58,11 @@ namespace LangPrint.Tests
             };
 
             var cpp = new CppProcessor();
-            cpp.Init(file, cppOpts);
+            cpp.Init(cppOpts);
 
-            Dictionary<string, string> cppGen = cpp.GenerateFiles();
+            CppPackage package = cpp.ModelFromJson(file);
+
+            Dictionary<string, string> cppGen = cpp.GenerateFiles(package);
             string savePath = Path.Combine(Environment.CurrentDirectory, "Test_PackageSyntaxGenerate");
             if (!Directory.Exists(savePath))
                 Directory.CreateDirectory(savePath);

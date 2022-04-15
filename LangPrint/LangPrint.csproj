@@ -9,6 +9,7 @@
     <RepositoryUrl>https://github.com/CorrM/LangPrint</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PackageTags />
+    <Nullable>enable</Nullable>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

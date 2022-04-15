@@ -10,21 +10,8 @@ using Newtonsoft.Json;
 
 namespace LangPrint.Cpp;
 
-public class CppItemBase
-{
-
-    [JsonProperty("Comments")]
-    public List<string> Comments { get; set; } = new();
-
-    [JsonProperty("InlineComment")]
-    public string InlineComment { get; set; }
-
-    [JsonProperty("Conditions")]
-    public List<string> Conditions { get; set; } = new();
-}
-
 [DebuggerDisplay("{" + nameof(Name) + "}" + " {" + nameof(Value) + "}")]
-public class CppDefine : CppItemBase
+public class CppDefine : PackageItemBase
 {
     [JsonProperty("Name")]
     public string Name { get; set; }
@@ -40,18 +27,8 @@ public class CppConstant : CppDefine
     public string Type { get; set; }
 }
 
-[DebuggerDisplay("{" + nameof(Name) + "}" + " {" + nameof(Value) + "}")]
-public class CppNameValue : CppItemBase
-{
-    [JsonProperty("Name")]
-    public string Name { get; set; }
-
-    [JsonProperty("Value")]
-    public string Value { get; set; }
-}
-
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-public class CppEnum : CppItemBase
+public class CppEnum : PackageItemBase
 {
     [JsonProperty("Name")]
     public string Name { get; set; }
@@ -63,14 +40,14 @@ public class CppEnum : CppItemBase
     public bool IsClass { get; set; }
 
     [JsonProperty("Values")]
-    public List<CppNameValue> Values { get; set; } = new();
+    public List<PackageNameValue> Values { get; set; } = new();
 
     [JsonProperty("HexValues")]
     public bool HexValues { get; set; }
 }
 
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-public class CppParameter : CppItemBase
+public class CppParameter : PackageItemBase
 {
     [JsonProperty("Type")]
     public string Type { get; set; }
@@ -80,7 +57,7 @@ public class CppParameter : CppItemBase
 }
 
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-public class CppFunction : CppItemBase
+public class CppFunction : PackageItemBase
 {
     [JsonProperty("Type")]
     public string Type { get; set; }
@@ -114,7 +91,7 @@ public class CppFunction : CppItemBase
 }
 
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-public class CppField : CppItemBase
+public class CppField : PackageItemBase
 {
     [JsonProperty("Type")]
     public string Type { get; set; }
@@ -157,7 +134,7 @@ public class CppField : CppItemBase
 }
 
 [DebuggerDisplay("{" + nameof(Name) + "}")]
-public class CppStruct : CppItemBase
+public class CppStruct : PackageItemBase
 {
     [JsonProperty("Name")]
     public string Name { get; set; }
