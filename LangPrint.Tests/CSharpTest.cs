@@ -20,7 +20,37 @@ public class CSharpTest
     }
 
     [Fact]
-    public void Test_OneFileGenerate()
+    public void CSharp_PackageFileGenerate()
+    {
+        string file = File.ReadAllText(Path.Combine(Environment.CurrentDirectory, "CSharpExample.json"));
+
+        var cppOpts = new CSharpLangOptions()
+        {
+            GeneratePackageSyntax = true,
+            PrintSectionName = true,
+            FieldMemberTypePadSize = 40
+        };
+
+        var cSharp = new CSharpProcessor();
+        cSharp.Init(cppOpts);
+
+        CSharpPackage package = cSharp.ModelFromJson(file);
+
+        Dictionary<string, string> cppGen = cSharp.GenerateFiles(package);
+        string savePath = Path.Combine(Environment.CurrentDirectory, "Test_OneFileGenerate");
+        if (!Directory.Exists(savePath))
+            Directory.CreateDirectory(savePath);
+
+        foreach ((string fileName, string fileContent) in cppGen)
+        {
+            File.WriteAllText(Path.Combine(savePath, fileName), fileContent);
+        }
+
+        _testOutputHelper.WriteLine(cppGen.ElementAt(0).Value);
+    }
+
+    [Fact]
+    public void CSharp_OneFileGenerate()
     {
         string file = File.ReadAllText(Path.Combine(Environment.CurrentDirectory, "CSharpExample.json"));
 

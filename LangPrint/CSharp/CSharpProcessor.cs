@@ -36,223 +36,47 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         return sb.ToString();
     }
 
-    //private string MakeCppFile(CSharpPackage package)
-    //{
-    //    var sb = new StringBuilder();
+    private string MakePackageStructsFile(CSharpPackage package)
+    {
+        var sb = new StringBuilder();
 
-    //    List<CSharpStruct> validStructs = package.Structs
-    //        .Where(s => ResolveConditions(package.Conditions, s.Conditions))
-    //        .ToList();
+        // File header
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Usings, package.BeforeNameSpace, out int indentLvl));
 
-    //    // File header
-    //    List<string> usings = package.Usings;
+        // Delegates
+        if (package.Delegates.Count > 0)
+            sb.Append(GenerateDelegates(package.Delegates, indentLvl, package.Conditions));
 
-    //    // Don't change 'package.CppIncludes'
-    //    if (Options.AddPackageHeaderToCppFile)
-    //        usings = usings.Append($"\"{package.Name}.h\"").ToList();
+        // Enums
+        if (package.Enums.Count > 0)
+            sb.Append(GenerateEnums(package.Enums, indentLvl, package.Conditions));
 
-    //    sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, usings, package.BeforeNameSpace, out int indentLvl));
+        // Structs
+        if (package.Structs.Count > 0)
+            sb.Append(GenerateStructs(package.Structs.Where(s => !s.IsClass), indentLvl, package.Conditions));
 
-    //    // Static fields
-    //    IEnumerable<CSharpField> staticVars = validStructs
-    //        .SelectMany(s => s.Fields)
-    //        .Where(v => ResolveConditions(package.Conditions, v.Conditions));
+        // File footer
+        sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
 
-    //    if (staticVars.Any(v => v.Static))
-    //    {
-    //        var varsStr = new List<string>();
-    //        sb.Append(GetSectionHeading("Structs Static Fields", indentLvl));
+        return sb.ToString();
+    }
 
-    //        foreach (CSharpStruct @struct in validStructs)
-    //        {
-    //            List<string> variables = @struct.Fields
-    //                .Where(v => v.Static && !v.Constexpr)
-    //                .Select(v => GetFieldString(v, false, indentLvl, @struct))
-    //                .ToList();
+    private string MakePackageClassesFile(CSharpPackage package)
+    {
+        var sb = new StringBuilder();
 
-    //            varsStr.AddRange(variables);
-    //        }
+        // File header
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Usings, package.BeforeNameSpace, out int indentLvl));
 
-    //        sb.Append(Helper.JoinString(Options.GetNewLineText(), varsStr));
-    //        sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
-    //    }
+        // Classes
+        if (package.Structs.Count > 0)
+            sb.Append(GenerateStructs(package.Structs.Where(s => s.IsClass), indentLvl, package.Conditions));
 
-    //    // Global fields
-    //    sb.Append(GenerateFields(package.Fields, false, indentLvl, package.Conditions));
+        // File footer
+        sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
 
-    //    // Global functions
-    //    sb.Append(GenerateFunctions(package.Functions.Where(f => f.TemplateParams.Count == 0), null, false, indentLvl, package.Conditions));
-
-    //    // Structs functions
-    //    if (validStructs.Any(s => s.Methods.Count > 0 && s.TemplateParams.Count == 0))
-    //    {
-    //        var methodsStr = new List<string>();
-    //        sb.Append(GetSectionHeading("Structs functions", indentLvl));
-
-    //        foreach (CSharpStruct @struct in validStructs.Where(s => s.TemplateParams.Count == 0))
-    //        {
-    //            int lvl = indentLvl;
-    //            IEnumerable<string> methodsToAdd = @struct.Methods
-    //                .Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(package.Conditions, m.Conditions))
-    //                .Where(m => !m.Friend && m.TemplateParams.Count == 0)
-    //                .Select(structMethod => GetFunctionString(structMethod, @struct, false, lvl, package.Conditions));
-    //            methodsStr.AddRange(methodsToAdd);
-    //        }
-
-    //        sb.Append(string.Join(Options.GetNewLineText(), methodsStr));
-    //        sb.Append(Options.GetNewLineText());
-    //    }
-
-    //    // File footer
-    //    sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
-
-    //    return sb.ToString();
-    //}
-
-    //private string MakeStructsFile(CSharpPackage package)
-    //{
-    //    var sb = new StringBuilder();
-
-    //    // File header
-    //    sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Usings, package.BeforeNameSpace, out int indentLvl));
-
-    //    // Enums
-    //    sb.Append(GenerateEnums(package.Enums, indentLvl, package.Conditions));
-
-    //    // Structs
-    //    sb.Append(GenerateStructs(package.Structs.Where(s => !s.IsClass), indentLvl, package.Conditions));
-
-    //    // File footer
-    //    sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
-
-    //    return sb.ToString();
-    //}
-
-    //private string MakeClassesFile(CSharpPackage package)
-    //{
-    //    var sb = new StringBuilder();
-
-    //    // File header
-    //    sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Usings, package.BeforeNameSpace, out int indentLvl));
-
-    //    // Structs
-    //    sb.Append(GenerateStructs(package.Structs.Where(s => s.IsClass), indentLvl, package.Conditions));
-
-    //    // File footer
-    //    sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
-
-    //    return sb.ToString();
-    //}
-
-    //private string MakePackageHeaderFile(CSharpPackage package)
-    //{
-    //    var sb = new StringBuilder();
-
-    //    // File header
-    //    sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Usings, package.BeforeNameSpace, out int indentLvl));
-
-    //    // Forwards
-    //    sb.Append(GenerateForwards(package.Forwards, indentLvl));
-
-    //    // Constants
-    //    sb.Append(GenerateConstants(package.Constants, indentLvl, package.Conditions));
-
-    //    // Global fields
-    //    sb.Append(GenerateFields(package.Fields, true, indentLvl, package.Conditions));
-
-    //    // Global functions
-    //    sb.Append(GenerateFunctions(package.Functions, null, true, indentLvl, package.Conditions));
-
-    //    // File footer
-    //    sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
-
-    //    sb.Append(Options.GetNewLineText());
-
-    //    // Package include
-    //    var packHeaders = new List<string>()
-    //    {
-    //        $"\"{package.Name}_Structs.h\"",
-    //        $"\"{package.Name}_Classes.h\""
-    //    };
-    //    packHeaders.AddRange(package.PackageHeaderIncludes);
-    //    sb.Append(GenerateUsings(packHeaders, indentLvl));
-
-    //    return sb.ToString();
-    //}
-
-    //private string MakePackageCppFile(CSharpPackage package)
-    //{
-    //    var sb = new StringBuilder();
-
-    //    List<CSharpStruct> validStructs = package.Structs
-    //        .Where(s => ResolveConditions(package.Conditions, s.Conditions))
-    //        .ToList();
-
-    //    // File header
-    //    List<string> includes = package.CppIncludes;
-
-    //    // Don't change 'package.CppIncludes'
-    //    if (Options.AddPackageHeaderToCppFile)
-    //        includes = includes.Append($"\"{package.Name}_Package.h\"").ToList();
-
-    //    sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, null, includes, null, null, package.CppBeforeNameSpace, out int indentLvl));
-
-    //    // Static fields
-    //    IEnumerable<CSharpField> staticVars = validStructs
-    //        .SelectMany(s => s.Fields)
-    //        .Where(v => ResolveConditions(package.Conditions, v.Conditions));
-
-    //    if (staticVars.Any(v => v.Static))
-    //    {
-    //        var varsStr = new List<string>();
-    //        sb.Append(GetSectionHeading("Structs Static Fields", indentLvl));
-
-    //        foreach (CSharpStruct @struct in validStructs)
-    //        {
-    //            List<string> variables = @struct.Fields
-    //                .Where(v => ResolveConditions(package.Conditions, v.Conditions))
-    //                .Where(v => v.Static && !v.Constexpr)
-    //                .Select(v => GetFieldString(v, false, indentLvl, @struct))
-    //                .ToList();
-
-    //            varsStr.AddRange(variables);
-    //        }
-
-    //        sb.Append(Helper.JoinString(Options.GetNewLineText(), varsStr));
-    //        sb.Append(Options.GetNewLineText() + Options.GetNewLineText());
-    //    }
-
-    //    // Global fields
-    //    sb.Append(GenerateFields(package.Fields, false, indentLvl, package.Conditions));
-
-    //    // Global functions
-    //    sb.Append(GenerateFunctions(package.Functions.Where(f => f.TemplateParams.Count == 0), null, false, indentLvl, package.Conditions));
-
-    //    // Structs functions
-    //    if (validStructs.Any(s => s.Methods.Count > 0 && s.TemplateParams.Count == 0))
-    //    {
-    //        var methodsStr = new List<string>();
-    //        sb.Append(GetSectionHeading("Structs Functions", indentLvl));
-
-    //        foreach (CSharpStruct @struct in validStructs.Where(s => s.TemplateParams.Count == 0))
-    //        {
-    //            int lvl = indentLvl;
-    //            IEnumerable<string> methodsToAdd = @struct.Methods
-    //                .Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(package.Conditions, m.Conditions))
-    //                .Where(m => !m.Friend && m.TemplateParams.Count == 0)
-    //                .Select(structMethod => GetFunctionString(structMethod, @struct, false, lvl, package.Conditions));
-    //            methodsStr.AddRange(methodsToAdd);
-    //        }
-
-    //        sb.Append(string.Join(Options.GetNewLineText(), methodsStr));
-    //        sb.Append(Options.GetNewLineText());
-    //    }
-
-    //    // File footer
-    //    sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
-
-    //    return sb.ToString();
-    //}
+        return sb.ToString();
+    }
 
     public bool ResolveConditions(List<string> conditions, List<string> conditionsToResolve)
     {
@@ -986,8 +810,8 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
             return ret;
         }
 
-        //ret.Add($"{cSharpPackage.Name}_Structs.cs", MakeStructsFile(cSharpPackage));
-        //ret.Add($"{cSharpPackage.Name}_Classes.cs", MakeClassesFile(cSharpPackage));
+        ret.Add($"{cSharpPackage.Name}_Structs.cs", MakePackageStructsFile(cSharpPackage));
+        ret.Add($"{cSharpPackage.Name}_Classes.cs", MakePackageClassesFile(cSharpPackage));
 
         return ret;
     }

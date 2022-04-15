@@ -293,6 +293,212 @@
           "Body": []
         }
       ]
+    },
+    {
+      "Attributes": [
+        {
+          "AppliesTo": "",
+          "Name": "Serializable",
+          "Arguments": []
+        },
+        {
+          "AppliesTo": "",
+          "Name": "Serializable",
+          "Arguments": [
+            "50"
+          ]
+        },
+        {
+          "AppliesTo": "return",
+          "Name": "SerializableX",
+          "Arguments": [
+            "50",
+            "50",
+            "50"
+          ]
+        }
+      ],
+      "AccessModifier": "public",
+      "Name": "ClassTest",
+      "Super": "Super",
+      "Interfaces": [
+        "IInterface1",
+        "IInterface2",
+        "IInterface3"
+      ],
+      "IsClass": true,
+      "IsStatic": false,
+      "IsReadOnly": true,
+      "GenericParams": [
+        "TT1",
+        "TT2"
+      ],
+      "Delegates": [
+        {
+          "AccessModifier": "public",
+          "Type": "int",
+          "Name": "PerformCalculation",
+          "GenericParams": [
+            "T1",
+            "T2"
+          ],
+          "Params": [
+            {
+              "Type": "int",
+              "Name": "x"
+            },
+            {
+              "Type": "int",
+              "Name": "y"
+            }
+          ]
+        }
+      ],
+      "Events": [
+        {
+          "AccessModifier": "public",
+          "Type": "EventHandler",
+          "Name": "SampleEvent",
+          "IsStatic": true
+        },
+        {
+          "AccessModifier": "public",
+          "Type": "EventHandlerX",
+          "Name": "SampleEventX",
+          "IsStatic": false
+        }
+      ],
+      "Fields": [
+        {
+          "Attributes": [
+            {
+              "AppliesTo": "",
+              "Name": "Serializable",
+              "Arguments": []
+            }
+          ],
+          "AccessModifier": "private",
+          "Type": "int",
+          "Name": "_privateReadOnlyField",
+          "Value": "new[] { 50 }",
+          "IsArray": true,
+          "IsReadOnly": true,
+          "IsStatic": false
+        },
+        {
+          "Attributes": [
+            {
+              "AppliesTo": "",
+              "Name": "Serializable",
+              "Arguments": [
+                "50"
+              ]
+            }
+          ],
+          "AccessModifier": "public",
+          "Type": "int",
+          "Name": "_publicStaticField",
+          "Value": "550",
+          "ArrayDim": false,
+          "IsReadOnly": false,
+          "IsStatic": true
+        },
+        {
+          "AccessModifier": "public",
+          "Type": "int",
+          "Name": "_publicField",
+          "Value": "",
+          "ArrayDim": false,
+          "IsReadOnly": false,
+          "IsStatic": false
+        }
+      ],
+      "Methods": [
+        {
+          "Attributes": [
+            {
+              "AppliesTo": "return",
+              "Name": "Serializable",
+              "Arguments": []
+            }
+          ],
+          "AccessModifier": "private",
+          "Type": "int",
+          "Name": "MethodIntNoneStaticTest",
+          "GenericParams": [
+            "T1",
+            "T2"
+          ],
+          "Params": [
+            {
+              "Type": "int",
+              "Name": "num"
+            }
+          ],
+          "IsStatic": false,
+          "Body": [
+            "return num;"
+          ]
+        },
+        {
+          "Attributes": [
+            {
+              "AppliesTo": "",
+              "Name": "Serializable",
+              "Arguments": []
+            }
+          ],
+          "AccessModifier": "public",
+          "Type": "int",
+          "Name": "MethodIntStaticTest",
+          "GenericParams": [
+            "T1",
+            "T2"
+          ],
+          "Params": [
+            {
+              "Attributes": [
+                {
+                  "AppliesTo": "",
+                  "Name": "MarshalAs",
+                  "Arguments": []
+                }
+              ],
+              "Type": "int",
+              "Name": "num"
+            }
+          ],
+          "IsStatic": true,
+          "Body": [
+            "return num;"
+          ]
+        },
+        {
+          "AccessModifier": "public",
+          "Type": "void",
+          "Name": "MethodVoidStaticTest",
+          "GenericParams": [
+            "T1"
+          ],
+          "Params": [
+            {
+              "Attributes": [
+                {
+                  "AppliesTo": "",
+                  "Name": "MarshalAs",
+                  "Arguments": [
+                    "Bool"
+                  ]
+                }
+              ],
+              "Type": "T1",
+              "Name": "type"
+            }
+          ],
+          "IsStatic": true,
+          "Body": []
+        }
+      ]
     }
   ]
 }
