@@ -5,7 +5,7 @@ namespace LangPrint;
 
 public static class LangPrint
 {
-    public static bool ResolveConditions(List<string> conditions, List<string> conditionsToResolve)
+    public static bool ResolveConditions(List<string> conditions, List<string>? conditionsToResolve)
     {
         if (conditionsToResolve is null || conditionsToResolve.Count == 0)
             return true;

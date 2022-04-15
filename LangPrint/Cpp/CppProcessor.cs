@@ -10,7 +10,7 @@ namespace LangPrint.Cpp;
 // Todo: add virtual functions to CppStruct
 public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 {
-    public CppLangOptions Options { get; private set; }
+    public CppLangOptions Options { get; private set; } = null!;
 
     private string MakeHeaderFile(CppPackage package)
     {
@@ -363,7 +363,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
                Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText();
     }
 
-    public string GetMultiCommentString(IEnumerable<string> comments, int baseIndentLvl, bool finalizeReturn = true)
+    public string GetMultiCommentString(IEnumerable<string>? comments, int baseIndentLvl, bool finalizeReturn = true)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
@@ -497,7 +497,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
             int biggestName = @enum.Values.Max(ev => ev.Name.Length);
             IEnumerable<string> vals = @enum.Values.Select(ev =>
             {
-                string value = long.TryParse(ev.Value, out long iValue) && iValue >= 0
+                string value = @enum.HexValues && long.TryParse(ev.Value, out long iValue) && iValue >= 0
                     ? $"0x{iValue:X16}"
                     : ev.Value;
 
