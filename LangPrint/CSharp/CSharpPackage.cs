@@ -152,6 +152,9 @@ public class CSharpField : PackageItemBase
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
 public class CSharpProperty : PackageItemBase
 {
+    [JsonProperty("Attributes")]
+    public List<CSharpAttribute> Attributes { get; set; } = new();
+
     [JsonProperty("AccessModifier")]
     public string AccessModifier { get; set; }
 
@@ -167,14 +170,20 @@ public class CSharpProperty : PackageItemBase
     [JsonProperty("IsArray")]
     public bool IsArray { get; set; }
 
-    [JsonProperty("IsReadOnly")]
-    public bool IsReadOnly { get; set; }
-
     [JsonProperty("IsStatic")]
     public bool IsStatic { get; set; }
 
-    [JsonProperty("Attributes")]
-    public List<CSharpAttribute> Attributes { get; set; } = new();
+    [JsonProperty("HaveGetter")]
+    public bool HaveGetter { get; set; }
+
+    [JsonProperty("HaveSetter")]
+    public bool HaveSetter { get; set; }
+
+    [JsonProperty("GetterCode")]
+    public List<string> GetterCode { get; set; } = new();
+
+    [JsonProperty("SetterCode")]
+    public List<string> SetterCode { get; set; } = new();
 }
 
 [DebuggerDisplay("{" + nameof(Name) + "}")]
@@ -215,6 +224,9 @@ public class CSharpStruct : PackageItemBase
 
     [JsonProperty("Fields")]
     public List<CSharpField> Fields { get; set; } = new();
+
+    [JsonProperty("Properties")]
+    public List<CSharpProperty> Properties { get; set; } = new();
 
     [JsonProperty("Methods")]
     public List<CSharpFunction> Methods { get; set; } = new();

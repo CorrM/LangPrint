@@ -408,6 +408,126 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         return sb.ToString();
     }
 
+    public string GetPropertyString(CSharpProperty property, int baseIndentLvl, List<string> conditions)
+    {
+        if (Options is null)
+            throw new Exception($"Call '{nameof(Init)}' function first");
+
+        var sb = new StringBuilder();
+
+        // Comment
+        sb.Append(GetMultiCommentString(property.Comments, baseIndentLvl, false));
+
+        // Attributes
+        if (property.Attributes.Count > 0)
+        {
+            sb.Append(GenerateAttributes(property.Attributes, baseIndentLvl, conditions));
+            sb.Append(Options.GetNewLineText());
+        }
+
+        // Indent
+        sb.Append(Helper.GetIndent(baseIndentLvl));
+
+        var firstPartSb = new StringBuilder();
+
+        // Access
+        if (!string.IsNullOrWhiteSpace(property.AccessModifier))
+            firstPartSb.Append($"{property.AccessModifier} ");
+
+        // Static
+        if (property.IsStatic)
+            firstPartSb.Append("static ");
+
+        // Type
+        firstPartSb.Append(property.Type);
+
+        // Array
+        if (property.IsArray)
+            firstPartSb.Append("[]");
+
+        // Type padding
+        string typePrefix = firstPartSb.ToString();
+        sb.Append($"{typePrefix.PadRight(Options.FieldMemberTypePadSize)} ");
+
+        var nameSb = new StringBuilder();
+
+        // Name
+        nameSb.Append(property.Name);
+
+        // Getter, Setter open
+        if (property.HaveGetter || property.HaveSetter)
+        {
+            if (property.GetterCode.Count > 0 || property.SetterCode.Count > 0)
+            {
+                nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
+                baseIndentLvl++;
+            }
+            else
+            {
+                nameSb.Append(' ');
+            }
+
+            nameSb.Append("{ ");
+        }
+
+        for (int i = 0; i < 2; i++)
+        {
+            string methodName = i == 0 ? "get" : "set";
+
+            switch (i)
+            {
+                case 0 when !property.HaveGetter:
+                case 1 when !property.HaveSetter:
+                    continue;
+
+                case 0 when property.GetterCode.Count == 0:
+                    nameSb.Append($"{methodName}; ");
+                    continue;
+
+                case 1 when property.SetterCode.Count == 0:
+                    nameSb.Append($"{methodName}; ");
+                    continue;
+            }
+
+            nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
+            nameSb.Append(methodName);
+            nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
+            nameSb.Append("{ ");
+
+            baseIndentLvl++;
+            nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
+            nameSb.Append(string.Join($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}", i == 0 ? property.GetterCode : property.SetterCode));
+
+            baseIndentLvl--;
+            nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
+            nameSb.Append('}');
+        }
+
+        // Getter, Setter close
+        if (property.HaveGetter || property.HaveSetter)
+        {
+            if (property.GetterCode.Count > 0 || property.SetterCode.Count > 0)
+            {
+                baseIndentLvl--;
+                nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
+            }
+
+            nameSb.Append('}');
+        }
+
+        // Value
+        if (!string.IsNullOrWhiteSpace(property.Value))
+            nameSb.Append($" = {property.Value};");
+
+        // Inline comment
+        if (!string.IsNullOrEmpty(property.InlineComment))
+            sb.Append(nameSb.ToString().PadRight(Options.InlineCommentPadSize) + $" // {property.InlineComment}");
+        else
+            sb.Append(nameSb);
+
+        return sb.ToString();
+    }
+
     public string GetEnumString(CSharpEnum @enum, int baseIndentLvl)
     {
         if (Options is null)
@@ -627,6 +747,10 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (@struct.Fields.Count > 0)
             sb.Append(GenerateFields(@struct.Fields, baseIndentLvl, conditions));
 
+        // Properties
+        if (@struct.Properties.Count > 0)
+            sb.Append(GenerateProperties(@struct.Properties, baseIndentLvl, conditions));
+
         // Methods
         if (@struct.Methods.Count > 0)
             sb.Append(GenerateFunctions(@struct.Methods, baseIndentLvl, conditions));
@@ -720,6 +844,26 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
 
         if (Options.PrintSectionName)
             ret = GetSectionHeading("Fields", baseIndentLvl) + ret;
+
+        return Helper.FinalizeSection(ret, Options.GetNewLineText());
+    }
+
+    public string GenerateProperties(IEnumerable<CSharpProperty> properties, int baseIndentLvl, List<string> conditions)
+    {
+        if (Options is null)
+            throw new Exception($"Call '{nameof(Init)}' function first");
+
+        List<CSharpProperty> props = properties
+            .Where(v => !string.IsNullOrWhiteSpace(v.Name) && !string.IsNullOrWhiteSpace(v.Type) && ResolveConditions(conditions, v.Conditions))
+            .ToList();
+
+        if (props.Count == 0)
+            return string.Empty;
+
+        string ret = string.Join(Options.GetNewLineText(), props.Select(p => GetPropertyString(p, baseIndentLvl, conditions)));
+
+        if (Options.PrintSectionName)
+            ret = GetSectionHeading("Properties", baseIndentLvl) + ret;
 
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
