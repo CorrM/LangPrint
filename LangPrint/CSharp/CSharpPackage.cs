@@ -91,6 +91,12 @@ public class CSharpParameter : PackageItemBase
 
     [JsonProperty("Name")]
     public string Name { get; set; }
+
+    [JsonProperty("IsRef")]
+    public bool IsRef { get; set; }
+
+    [JsonProperty("IsOut")]
+    public bool IsOut { get; set; }
 }
 
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
@@ -116,6 +122,24 @@ public class CSharpFunction : PackageItemBase
 
     [JsonProperty("IsStatic")]
     public bool IsStatic { get; set; }
+
+    [JsonProperty("IsAbstract")]
+    public bool IsAbstract { get; set; }
+
+    [JsonProperty("IsVirtual")]
+    public bool IsVirtual { get; set; }
+
+    [JsonProperty("IsUnsafe")]
+    public bool IsUnsafe { get; set; }
+
+    [JsonProperty("IsOverride")]
+    public bool IsOverride { get; set; }
+
+    [JsonProperty("IsExtern")]
+    public bool IsExtern { get; set; }
+
+    [JsonProperty("IsAsync")]
+    public bool IsAsync { get; set; }
 
     [JsonProperty("Body")]
     public List<string> Body { get; set; } = new();
@@ -145,8 +169,14 @@ public class CSharpField : PackageItemBase
     [JsonProperty("IsReadOnly")]
     public bool IsReadOnly { get; set; }
 
+    [JsonProperty("IsVolatile")]
+    public bool IsVolatile { get; set; }
+
     [JsonProperty("IsStatic")]
     public bool IsStatic { get; set; }
+
+    [JsonProperty("IsConst")]
+    public bool IsConst { get; set; }
 }
 
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
@@ -172,6 +202,15 @@ public class CSharpProperty : PackageItemBase
 
     [JsonProperty("IsStatic")]
     public bool IsStatic { get; set; }
+
+    [JsonProperty("IsAbstract")]
+    public bool IsAbstract { get; set; }
+
+    [JsonProperty("IsOverride")]
+    public bool IsOverride { get; set; }
+
+    [JsonProperty("IsVirtual")]
+    public bool IsVirtual { get; set; }
 
     [JsonProperty("HaveGetter")]
     public bool HaveGetter { get; set; }
@@ -209,6 +248,12 @@ public class CSharpStruct : PackageItemBase
 
     [JsonProperty("IsStatic")]
     public bool IsStatic { get; set; }
+
+    [JsonProperty("IsAbstract")]
+    public bool IsAbstract { get; set; }
+
+    [JsonProperty("IsSealed")]
+    public bool IsSealed { get; set; }
 
     [JsonProperty("IsReadOnly")]
     public bool IsReadOnly { get; set; }

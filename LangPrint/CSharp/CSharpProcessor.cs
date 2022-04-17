@@ -283,6 +283,14 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
             sb.Append(' ');
         }
 
+        // Ref
+        if (parameter.IsRef)
+            sb.Append("ref ");
+
+        // Ref
+        if (parameter.IsOut)
+            sb.Append("out ");
+
         // Param
         sb.Append($"{parameter.Type} {parameter.Name}");
 
@@ -369,6 +377,10 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (!string.IsNullOrWhiteSpace(field.AccessModifier))
             firstPartSb.Append($"{field.AccessModifier} ");
 
+        // Volatile
+        if (field.IsVolatile)
+            firstPartSb.Append("volatile ");
+
         // Static
         if (field.IsStatic)
             firstPartSb.Append("static ");
@@ -433,6 +445,18 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         // Access
         if (!string.IsNullOrWhiteSpace(property.AccessModifier))
             firstPartSb.Append($"{property.AccessModifier} ");
+
+        // Abstract
+        if (property.IsAbstract)
+            firstPartSb.Append("abstract ");
+
+        // Override
+        if (property.IsOverride)
+            firstPartSb.Append("override ");
+
+        // Virtual
+        if (property.IsVirtual)
+            firstPartSb.Append("virtual ");
 
         // Static
         if (property.IsStatic)
@@ -623,6 +647,30 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (!string.IsNullOrWhiteSpace(func.AccessModifier))
             sb.Append($"{func.AccessModifier} ");
 
+        // Abstract
+        if (func.IsAbstract)
+            sb.Append("abstract ");
+
+        // Virtual
+        if (func.IsVirtual)
+            sb.Append("virtual ");
+
+        // Unsafe
+        if (func.IsUnsafe)
+            sb.Append("unsafe ");
+
+        // Override
+        if (func.IsOverride)
+            sb.Append("override ");
+
+        // Extern
+        if (func.IsExtern)
+            sb.Append("extern ");
+
+        // Async
+        if (func.IsAsync)
+            sb.Append("async ");
+
         // Static
         if (func.IsStatic)
             sb.Append("static ");
@@ -688,6 +736,14 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         // ReadOnly
         if (/*!@struct.IsClass && */@struct.IsReadOnly)
             sb.Append("readonly ");
+
+        // Abstract
+        if (@struct.IsAbstract)
+            sb.Append("abstract ");
+
+        // Sealed
+        if (@struct.IsSealed)
+            sb.Append("sealed ");
 
         // Static
         if (@struct.IsStatic)
