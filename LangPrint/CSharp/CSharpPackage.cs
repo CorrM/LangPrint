@@ -246,6 +246,9 @@ public class CSharpStruct : PackageItemBase
     [JsonProperty("IsClass")]
     public bool IsClass { get; set; }
 
+    [JsonProperty("IsInterface")]
+    public bool IsInterface { get; set; }
+
     [JsonProperty("IsStatic")]
     public bool IsStatic { get; set; }
 

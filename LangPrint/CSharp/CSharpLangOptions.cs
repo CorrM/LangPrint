@@ -6,5 +6,4 @@ public class CSharpLangOptions : LangOptions
     public int FieldMemberTypePadSize { get; set; } = 0;
     public int InlineCommentPadSize { get; set; } = 0;
     public bool ResolveConditions { get; set; } = true;
-    public bool AddPackageHeaderToCppFile { get; set; } = true;
 }

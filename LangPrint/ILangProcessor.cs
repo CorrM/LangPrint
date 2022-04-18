@@ -8,6 +8,6 @@ public interface ILangProcessor<TModel, TOptions> where TModel : ILang where TOp
     //TModel Model { get; }
 
     void Init(TOptions options);
-    TModel ModelFromJson(string jsonData);
+    TModel? ModelFromJson(string jsonData);
     Dictionary<string, string> GenerateFiles(TModel cppModel);
 }

@@ -53,7 +53,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
 
         // Structs
         if (package.Structs.Count > 0)
-            sb.Append(GenerateStructs(package.Structs.Where(s => !s.IsClass), indentLvl, package.Conditions));
+            sb.Append(GenerateStructs(package.Structs.Where(s => !s.IsClass && !s.IsInterface), indentLvl, package.Conditions));
 
         // File footer
         sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
@@ -71,6 +71,23 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         // Classes
         if (package.Structs.Count > 0)
             sb.Append(GenerateStructs(package.Structs.Where(s => s.IsClass), indentLvl, package.Conditions));
+
+        // File footer
+        sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
+
+        return sb.ToString();
+    }
+
+    private string MakePackageInterfacesFile(CSharpPackage package)
+    {
+        var sb = new StringBuilder();
+
+        // File header
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Usings, package.BeforeNameSpace, out int indentLvl));
+
+        // Interfaces
+        if (package.Structs.Count > 0)
+            sb.Append(GenerateStructs(package.Structs.Where(s => s.IsInterface), indentLvl, package.Conditions));
 
         // File footer
         sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
@@ -752,6 +769,8 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         // Kind
         if (@struct.IsClass)
             sb.Append("class ");
+        else if (@struct.IsInterface)
+            sb.Append("interface ");
         else
             sb.Append("struct ");
 
@@ -788,7 +807,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         sb.Append($"{Helper.GetIndent(baseIndentLvl)}{{");
         baseIndentLvl++;
 
-        if (@struct.Fields.Count > 0 || @struct.Methods.Count > 0)
+        if (@struct.Fields.Count > 0 || @struct.Properties.Count > 0 || @struct.Methods.Count > 0)
             sb.Append(Options.GetNewLineText());
 
         // Delegates
@@ -989,7 +1008,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         Options = options ?? new CSharpLangOptions();
     }
 
-    public CSharpPackage ModelFromJson(string jsonData)
+    public CSharpPackage? ModelFromJson(string jsonData)
     {
         return JsonConvert.DeserializeObject<CSharpPackage>(jsonData);
     }
@@ -1012,6 +1031,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
 
         ret.Add($"{cSharpPackage.Name}_Structs.cs", MakePackageStructsFile(cSharpPackage));
         ret.Add($"{cSharpPackage.Name}_Classes.cs", MakePackageClassesFile(cSharpPackage));
+        ret.Add($"{cSharpPackage.Name}_Interfaces.cs", MakePackageInterfacesFile(cSharpPackage));
 
         return ret;
     }
