@@ -618,7 +618,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
 
         // Close
         baseIndentLvl--;
-        sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
+        sb.Append($"{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
 
         return sb.ToString();
     }
@@ -813,7 +813,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
 
         // Close struct scope
         baseIndentLvl--;
-        sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
+        sb.Append($"{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
 
         return sb.ToString();
     }
