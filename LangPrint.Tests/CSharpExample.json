@@ -413,6 +413,73 @@
           "IsStatic": false
         }
       ],
+      "Properties": [
+        {
+          "AccessModifier": "public",
+          "Type": "int",
+          "Name": "StaticPropTest",
+          "Value": "",
+          "IsArray": false,
+          "IsStatic": true,
+          "HaveGetter": true,
+          "HaveSetter": true,
+          "GetterCode": [
+            "FirstLine;",
+            "return 50;"
+          ],
+          "SetterCode": [
+            "_fieldX = value;"
+          ]
+        },
+        {
+          "AccessModifier": "public",
+          "Type": "int",
+          "Name": "StaticPropTest",
+          "Value": "",
+          "IsArray": false,
+          "IsStatic": true,
+          "HaveGetter": true,
+          "HaveSetter": true,
+          "GetterCode": [],
+          "SetterCode": []
+        },
+        {
+          "AccessModifier": "public",
+          "Type": "int",
+          "Name": "StaticPropTest",
+          "Value": "",
+          "IsArray": false,
+          "IsStatic": true,
+          "HaveGetter": true,
+          "HaveSetter": false,
+          "GetterCode": [],
+          "SetterCode": []
+        },
+        {
+          "AccessModifier": "public",
+          "Type": "int",
+          "Name": "StaticPropTest",
+          "Value": "",
+          "IsArray": false,
+          "IsStatic": true,
+          "HaveGetter": false,
+          "HaveSetter": true,
+          "GetterCode": [],
+          "SetterCode": []
+        },
+        {
+          "AccessModifier": "public",
+          "Type": "int",
+          "Name": "StaticPropTest",
+          "Value": "50",
+          "IsArray": false,
+          "IsStatic": true,
+          "HaveGetter": true,
+          "HaveSetter": false,
+          "GetterCode": [],
+          "SetterCode": []
+        }
+      ],
       "Methods": [
         {
           "Attributes": [

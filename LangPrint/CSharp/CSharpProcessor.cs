@@ -53,7 +53,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
 
         // Structs
         if (package.Structs.Count > 0)
-            sb.Append(GenerateStructs(package.Structs.Where(s => !s.IsClass), indentLvl, package.Conditions));
+            sb.Append(GenerateStructs(package.Structs.Where(s => !s.IsClass && !s.IsInterface), indentLvl, package.Conditions));
 
         // File footer
         sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
@@ -71,6 +71,23 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         // Classes
         if (package.Structs.Count > 0)
             sb.Append(GenerateStructs(package.Structs.Where(s => s.IsClass), indentLvl, package.Conditions));
+
+        // File footer
+        sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
+
+        return sb.ToString();
+    }
+
+    private string MakePackageInterfacesFile(CSharpPackage package)
+    {
+        var sb = new StringBuilder();
+
+        // File header
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Usings, package.BeforeNameSpace, out int indentLvl));
+
+        // Interfaces
+        if (package.Structs.Count > 0)
+            sb.Append(GenerateStructs(package.Structs.Where(s => s.IsInterface), indentLvl, package.Conditions));
 
         // File footer
         sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
@@ -283,6 +300,14 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
             sb.Append(' ');
         }
 
+        // Ref
+        if (parameter.IsRef)
+            sb.Append("ref ");
+
+        // Ref
+        if (parameter.IsOut)
+            sb.Append("out ");
+
         // Param
         sb.Append($"{parameter.Type} {parameter.Name}");
 
@@ -369,6 +394,10 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (!string.IsNullOrWhiteSpace(field.AccessModifier))
             firstPartSb.Append($"{field.AccessModifier} ");
 
+        // Volatile
+        if (field.IsVolatile)
+            firstPartSb.Append("volatile ");
+
         // Static
         if (field.IsStatic)
             firstPartSb.Append("static ");
@@ -402,6 +431,138 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         // Inline comment
         if (!string.IsNullOrEmpty(field.InlineComment))
             sb.Append(nameSb.ToString().PadRight(Options.InlineCommentPadSize) + $" // {field.InlineComment}");
+        else
+            sb.Append(nameSb);
+
+        return sb.ToString();
+    }
+
+    public string GetPropertyString(CSharpProperty property, int baseIndentLvl, List<string> conditions)
+    {
+        if (Options is null)
+            throw new Exception($"Call '{nameof(Init)}' function first");
+
+        var sb = new StringBuilder();
+
+        // Comment
+        sb.Append(GetMultiCommentString(property.Comments, baseIndentLvl, false));
+
+        // Attributes
+        if (property.Attributes.Count > 0)
+        {
+            sb.Append(GenerateAttributes(property.Attributes, baseIndentLvl, conditions));
+            sb.Append(Options.GetNewLineText());
+        }
+
+        // Indent
+        sb.Append(Helper.GetIndent(baseIndentLvl));
+
+        var firstPartSb = new StringBuilder();
+
+        // Access
+        if (!string.IsNullOrWhiteSpace(property.AccessModifier))
+            firstPartSb.Append($"{property.AccessModifier} ");
+
+        // Abstract
+        if (property.IsAbstract)
+            firstPartSb.Append("abstract ");
+
+        // Override
+        if (property.IsOverride)
+            firstPartSb.Append("override ");
+
+        // Virtual
+        if (property.IsVirtual)
+            firstPartSb.Append("virtual ");
+
+        // Static
+        if (property.IsStatic)
+            firstPartSb.Append("static ");
+
+        // Type
+        firstPartSb.Append(property.Type);
+
+        // Array
+        if (property.IsArray)
+            firstPartSb.Append("[]");
+
+        // Type padding
+        string typePrefix = firstPartSb.ToString();
+        sb.Append($"{typePrefix.PadRight(Options.FieldMemberTypePadSize)} ");
+
+        var nameSb = new StringBuilder();
+
+        // Name
+        nameSb.Append(property.Name);
+
+        // Getter, Setter open
+        if (property.HaveGetter || property.HaveSetter)
+        {
+            if (property.GetterCode.Count > 0 || property.SetterCode.Count > 0)
+            {
+                nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
+                baseIndentLvl++;
+            }
+            else
+            {
+                nameSb.Append(' ');
+            }
+
+            nameSb.Append("{ ");
+        }
+
+        for (int i = 0; i < 2; i++)
+        {
+            string methodName = i == 0 ? "get" : "set";
+
+            switch (i)
+            {
+                case 0 when !property.HaveGetter:
+                case 1 when !property.HaveSetter:
+                    continue;
+
+                case 0 when property.GetterCode.Count == 0:
+                    nameSb.Append($"{methodName}; ");
+                    continue;
+
+                case 1 when property.SetterCode.Count == 0:
+                    nameSb.Append($"{methodName}; ");
+                    continue;
+            }
+
+            nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
+            nameSb.Append(methodName);
+            nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
+            nameSb.Append("{ ");
+
+            baseIndentLvl++;
+            nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
+            nameSb.Append(string.Join($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}", i == 0 ? property.GetterCode : property.SetterCode));
+
+            baseIndentLvl--;
+            nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
+            nameSb.Append('}');
+        }
+
+        // Getter, Setter close
+        if (property.HaveGetter || property.HaveSetter)
+        {
+            if (property.GetterCode.Count > 0 || property.SetterCode.Count > 0)
+            {
+                baseIndentLvl--;
+                nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
+            }
+
+            nameSb.Append('}');
+        }
+
+        // Value
+        if (!string.IsNullOrWhiteSpace(property.Value))
+            nameSb.Append($" = {property.Value};");
+
+        // Inline comment
+        if (!string.IsNullOrEmpty(property.InlineComment))
+            sb.Append(nameSb.ToString().PadRight(Options.InlineCommentPadSize) + $" // {property.InlineComment}");
         else
             sb.Append(nameSb);
 
@@ -474,7 +635,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
 
         // Close
         baseIndentLvl--;
-        sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
+        sb.Append($"{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
 
         return sb.ToString();
     }
@@ -502,6 +663,30 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         // Access
         if (!string.IsNullOrWhiteSpace(func.AccessModifier))
             sb.Append($"{func.AccessModifier} ");
+
+        // Abstract
+        if (func.IsAbstract)
+            sb.Append("abstract ");
+
+        // Virtual
+        if (func.IsVirtual)
+            sb.Append("virtual ");
+
+        // Unsafe
+        if (func.IsUnsafe)
+            sb.Append("unsafe ");
+
+        // Override
+        if (func.IsOverride)
+            sb.Append("override ");
+
+        // Extern
+        if (func.IsExtern)
+            sb.Append("extern ");
+
+        // Async
+        if (func.IsAsync)
+            sb.Append("async ");
 
         // Static
         if (func.IsStatic)
@@ -569,6 +754,14 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (/*!@struct.IsClass && */@struct.IsReadOnly)
             sb.Append("readonly ");
 
+        // Abstract
+        if (@struct.IsAbstract)
+            sb.Append("abstract ");
+
+        // Sealed
+        if (@struct.IsSealed)
+            sb.Append("sealed ");
+
         // Static
         if (@struct.IsStatic)
             sb.Append("static ");
@@ -576,6 +769,8 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         // Kind
         if (@struct.IsClass)
             sb.Append("class ");
+        else if (@struct.IsInterface)
+            sb.Append("interface ");
         else
             sb.Append("struct ");
 
@@ -612,7 +807,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         sb.Append($"{Helper.GetIndent(baseIndentLvl)}{{");
         baseIndentLvl++;
 
-        if (@struct.Fields.Count > 0 || @struct.Methods.Count > 0)
+        if (@struct.Fields.Count > 0 || @struct.Properties.Count > 0 || @struct.Methods.Count > 0)
             sb.Append(Options.GetNewLineText());
 
         // Delegates
@@ -627,13 +822,17 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (@struct.Fields.Count > 0)
             sb.Append(GenerateFields(@struct.Fields, baseIndentLvl, conditions));
 
+        // Properties
+        if (@struct.Properties.Count > 0)
+            sb.Append(GenerateProperties(@struct.Properties, baseIndentLvl, conditions));
+
         // Methods
         if (@struct.Methods.Count > 0)
             sb.Append(GenerateFunctions(@struct.Methods, baseIndentLvl, conditions));
 
         // Close struct scope
         baseIndentLvl--;
-        sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
+        sb.Append($"{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
 
         return sb.ToString();
     }
@@ -724,6 +923,26 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
+    public string GenerateProperties(IEnumerable<CSharpProperty> properties, int baseIndentLvl, List<string> conditions)
+    {
+        if (Options is null)
+            throw new Exception($"Call '{nameof(Init)}' function first");
+
+        List<CSharpProperty> props = properties
+            .Where(v => !string.IsNullOrWhiteSpace(v.Name) && !string.IsNullOrWhiteSpace(v.Type) && ResolveConditions(conditions, v.Conditions))
+            .ToList();
+
+        if (props.Count == 0)
+            return string.Empty;
+
+        string ret = string.Join(Options.GetNewLineText(), props.Select(p => GetPropertyString(p, baseIndentLvl, conditions)));
+
+        if (Options.PrintSectionName)
+            ret = GetSectionHeading("Properties", baseIndentLvl) + ret;
+
+        return Helper.FinalizeSection(ret, Options.GetNewLineText());
+    }
+
     public string GenerateFunctions(IEnumerable<CSharpFunction> functions, int baseIndentLvl, List<string> conditions)
     {
         if (Options is null)
@@ -789,7 +1008,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         Options = options ?? new CSharpLangOptions();
     }
 
-    public CSharpPackage ModelFromJson(string jsonData)
+    public CSharpPackage? ModelFromJson(string jsonData)
     {
         return JsonConvert.DeserializeObject<CSharpPackage>(jsonData);
     }
@@ -812,6 +1031,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
 
         ret.Add($"{cSharpPackage.Name}_Structs.cs", MakePackageStructsFile(cSharpPackage));
         ret.Add($"{cSharpPackage.Name}_Classes.cs", MakePackageClassesFile(cSharpPackage));
+        ret.Add($"{cSharpPackage.Name}_Interfaces.cs", MakePackageInterfacesFile(cSharpPackage));
 
         return ret;
     }
