@@ -274,7 +274,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return sb.ToString();
     }
 
-    public bool ResolveConditions(List<string> conditions, List<string> conditionsToResolve)
+    public bool ResolveConditions(List<string> conditions, List<string>? conditionsToResolve)
     {
         if (!Options.ResolveConditions)
             return true;
@@ -282,7 +282,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return LangPrint.ResolveConditions(conditions, conditionsToResolve);
     }
 
-    public string GetFileHeader(IEnumerable<string> headingComment, string nameSpace, List<string> pragmas, List<string> includes, List<CppDefine> defines, List<string> typeDefs, string beforeNameSpace, out int indentLvl)
+    public string GetFileHeader(IEnumerable<string>? headingComment, string nameSpace, List<string>? pragmas, List<string>? includes, List<CppDefine>? defines, List<string>? typeDefs, string beforeNameSpace, out int indentLvl)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
@@ -392,7 +392,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return $"{parameter.Type} {parameter.Name}";
     }
 
-    public string GetFieldString(CppField field, bool declaration, int baseIndentLvl, CppStruct parent = null)
+    public string GetFieldString(CppField field, bool declaration, int baseIndentLvl, CppStruct? parent = null)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
@@ -521,7 +521,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return sb.ToString();
     }
 
-    public string GetFunctionString(CppFunction func, CppStruct parent, bool declaration, int baseIndentLvl, List<string> modelConditions)
+    public string GetFunctionString(CppFunction func, CppStruct? parent, bool declaration, int baseIndentLvl, List<string>? modelConditions)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
@@ -571,7 +571,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 
         // Params
         sb.Append('(');
-        sb.Append(string.Join(", ", func.Params.Where(p => ResolveConditions(modelConditions, p.Conditions)).Select(GetParamString)));
+        sb.Append(string.Join(", ", func.Params.Where(p => (modelConditions is null || ResolveConditions(modelConditions, p.Conditions))).Select(GetParamString)));
         sb.Append(')');
 
         // Const
@@ -602,7 +602,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return sb.ToString();
     }
 
-    public string GetStructString(CppStruct @struct, int baseIndentLvl, List<string> conditions)
+    public string GetStructString(CppStruct @struct, int baseIndentLvl, List<string>? conditions)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
@@ -656,7 +656,9 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 
             bool lastVarIsPrivate = false;
             bool lastVarIsUnion = false;
-            List<CppField> variables = @struct.Fields.Where(v => !string.IsNullOrWhiteSpace(v.Name) && ResolveConditions(conditions, v.Conditions)).ToList();
+            List<CppField> variables = @struct.Fields
+                .Where(v => !string.IsNullOrWhiteSpace(v.Name) && (conditions is null || ResolveConditions(conditions, v.Conditions)))
+                .ToList();
 
             // Force write "private" or "public"
             if (variables.Count > 0)
@@ -717,7 +719,9 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
             sb.Append(Options.GetNewLineText());
 
             bool lastMethodIsPrivate = false;
-            List<CppFunction> methods = @struct.Methods.Where(m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(conditions, m.Conditions)).ToList();
+            List<CppFunction> methods = @struct.Methods
+                .Where(m => !string.IsNullOrWhiteSpace(m.Name) && (conditions is null || ResolveConditions(conditions, m.Conditions)))
+                .ToList();
 
             // Force write "private" or "public"
             if (methods.Count > 0)
@@ -830,7 +834,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateFunctions(IEnumerable<CppFunction> functions, CppStruct parent, bool declarationOnly, int baseIndentLvl, List<string> conditions)
+    public string GenerateFunctions(IEnumerable<CppFunction> functions, CppStruct? parent, bool declarationOnly, int baseIndentLvl, List<string> conditions)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
@@ -895,13 +899,13 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateStructs(IEnumerable<CppStruct> structs, int baseIndentLvl, List<string> conditions)
+    public string GenerateStructs(IEnumerable<CppStruct> structs, int baseIndentLvl, List<string>? conditions)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         List<CppStruct> vStruct = structs
-            .Where(s => !string.IsNullOrWhiteSpace(s.Name) && ResolveConditions(conditions, s.Conditions))
+            .Where(s => !string.IsNullOrWhiteSpace(s.Name) && (conditions is null || ResolveConditions(conditions, s.Conditions)))
             .ToList();
 
         if (vStruct.Count == 0)
@@ -915,12 +919,12 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public void Init(CppLangOptions options = null)
+    public void Init(CppLangOptions? options = null)
     {
         Options = options ?? new CppLangOptions();
     }
 
-    public CppPackage ModelFromJson(string jsonData)
+    public CppPackage? ModelFromJson(string jsonData)
     {
         return JsonConvert.DeserializeObject<CppPackage>(jsonData);
     }
