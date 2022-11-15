@@ -22,5 +22,4 @@ public static class LangPrint
             .Where(c => !string.IsNullOrWhiteSpace(c) && !c.StartsWith("!"))
             .All(conditions.Contains);
     }
-
 }

@@ -5,93 +5,96 @@
     </assembly>
     <members>
         <member name="P:LangPrint.Cpp.CppProcessor.JsonData">
-            <inheritdoc />
+            <inheritdoc/>
         </member>
         <member name="P:LangPrint.Cpp.CppProcessor.Options">
-            <inheritdoc />
+            <inheritdoc/>
         </member>
         <member name="P:LangPrint.Cpp.CppProcessor.Model">
-            <inheritdoc />
+            <inheritdoc/>
         </member>
         <member name="M:LangPrint.Cpp.CppProcessor.Process(System.String,LangPrint.LangOptions)">
-            <inheritdoc />
+            <inheritdoc/>
         </member>
         <member name="M:LangPrint.Cpp.CppProcessor.Generate">
-            <inheritdoc />
+            <inheritdoc/>
         </member>
         <member name="M:LangPrint.ILangProcessor`1.Process(System.String,LangPrint.LangOptions)">
             <summary>
-            Load and prepare data that processor needs
+                Load and prepare data that processor needs
             </summary>
             <parameter name="jsonData">Model json string</parameter>
             <parameter name="options">Customize how processor work</parameter>
         </member>
         <member name="T:LangPrint.Utils.StringBuilder2">
             <summary>
-            Custom <see cref="T:System.Text.StringBuilder"/>
+                Custom
+                <see cref="T:System.Text.StringBuilder"/>
             </summary>
         </member>
         <member name="P:LangPrint.Utils.StringBuilder2.BaseBuilder">
             <summary>
-            <see cref="T:System.Text.StringBuilder"/> that wrapped by this class
+                <see cref="T:System.Text.StringBuilder"/>
+                that wrapped by this class
             </summary>
         </member>
         <member name="P:LangPrint.Utils.StringBuilder2.IndentLevel">
             <summary>
-            Current indent level
+                Current indent level
             </summary>
         </member>
         <member name="P:LangPrint.Utils.StringBuilder2.Length">
             <summary>
-            String length
+                String length
             </summary>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.#ctor(System.String)">
             <summary>
-            Constructor
+                Constructor
             </summary>
             <parameter name="str">Text to init with</parameter>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.#ctor">
             <summary>
-            Constructor
+                Constructor
             </summary>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.Remove(System.Int32,System.Int32)">
             <summary>
-            Removes the specified range of characters from this instance.
+                Removes the specified range of characters from this instance.
             </summary>
             <parameter name="index">The zero-based position in this instance where removal begins.</parameter>
             <parameter name="len">The number of characters to remove.</parameter>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.Replace(System.String,System.String)">
             <summary>
-            Replaces all occurrences of a specified string in this instance with another specified string.
+                Replaces all occurrences of a specified string in this instance with another specified string.
             </summary>
             <parameter name="old">Text to be replaced</parameter>
             <parameter name="newStr">Text to replace with</parameter>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.Append(System.String)">
             <summary>
-            Appends a copy of the specified string to this instance.
+                Appends a copy of the specified string to this instance.
             </summary>
             <parameter name="str">Text to append</parameter>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.AppendLine(System.String)">
             <summary>
-            Appends a copy of the specified string to this instance.
+                Appends a copy of the specified string to this instance.
             </summary>
             <parameter name="str">Text to append</parameter>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.ToString">
             <summary>
-            Converts the value of this instance to a System.String.
+                Converts the value of this instance to a System.String.
             </summary>
             <returns>A string whose value is the same as this instance.</returns>
         </member>
         <member name="M:LangPrint.Utils.StringBuilder2.op_Implicit(LangPrint.Utils.StringBuilder2)~System.String">
             <summary>
-            Cast to <see cref="T:System.String"/>
+                Cast to
+                <see cref="T:System.String"/>
             </summary>
         </member>
     </members>

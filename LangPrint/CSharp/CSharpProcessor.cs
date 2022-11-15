@@ -751,7 +751,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
             sb.Append($"{@struct.AccessModifier} ");
 
         // ReadOnly
-        if (/*!@struct.IsClass && */@struct.IsReadOnly)
+        if ( /*!@struct.IsClass && */@struct.IsReadOnly)
             sb.Append("readonly ");
 
         // Abstract
