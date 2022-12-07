@@ -15,7 +15,7 @@ var cppOpts = new CppLangOptions()
     GeneratePackageSyntax = true,
     AddPackageHeaderToCppFile = false
 };
-_cppProcessor.Init(cppOpts);
+cppProcessor.Init(cppOpts);
 
 // Make package content
 var cppPackage = new CppPackage()
