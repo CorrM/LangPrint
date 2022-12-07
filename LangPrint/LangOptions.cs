@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace LangPrint;
 
@@ -8,10 +9,13 @@ public enum NewLineType
     LF
 }
 
-public class LangOptions
+public abstract class LangOptions
 {
     public NewLineType NewLine { get; init; } = NewLineType.CRLF;
     public bool PrintSectionName { get; init; } = true;
+    public bool ResolveConditions { get; set; } = true;
+    public string VariablePrefix { get; init; } = "$VAR_";
+    public Dictionary<string, string> Variables { get; } = new();
 
     public string GetNewLineText()
     {

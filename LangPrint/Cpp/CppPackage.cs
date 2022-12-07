@@ -56,6 +56,8 @@ public class CppParameter : PackageItemBase
     public string Name { get; set; }
 }
 
+// TODO: Add virtual functions
+
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
 public class CppFunction : PackageItemBase
 {

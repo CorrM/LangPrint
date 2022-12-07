@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using LangPrint.Utils;
@@ -7,17 +8,17 @@ using Newtonsoft.Json;
 
 namespace LangPrint.Cpp;
 
-// Todo: add virtual functions to CppStruct
-public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
+public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 {
-    public CppLangOptions Options { get; private set; } = null!;
+    public override CppLangOptions Options { get; protected set; } = null!;
 
     private string MakeHeaderFile(CppPackage package)
     {
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // File header
-        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Pragmas, package.Includes, package.Defines, package.TypeDefs, package.BeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Pragmas, package.Includes, package.Defines, package.TypeDefs, package.BeforeNameSpace,
+            out int indentLvl));
 
         // Forwards
         sb.Append(GenerateForwards(package.Forwards, indentLvl));
@@ -45,7 +46,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 
     private string MakeCppFile(CppPackage package)
     {
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         List<CppStruct> validStructs = package.Structs
             .Where(s => ResolveConditions(package.Conditions, s.Conditions))
@@ -118,7 +119,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 
     private string MakeStructsFile(CppPackage package)
     {
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         var pragmas = new List<string>()
         {
@@ -145,7 +146,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 
     private string MakeClassesFile(CppPackage package)
     {
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         var pragmas = new List<string>()
         {
@@ -166,10 +167,11 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 
     private string MakePackageHeaderFile(CppPackage package)
     {
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // File header
-        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Pragmas, package.Includes, package.Defines, package.TypeDefs, package.BeforeNameSpace, out int indentLvl));
+        sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Pragmas, package.Includes, package.Defines, package.TypeDefs, package.BeforeNameSpace,
+            out int indentLvl));
 
         // Forwards
         sb.Append(GenerateForwards(package.Forwards, indentLvl));
@@ -202,7 +204,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 
     private string MakePackageCppFile(CppPackage package)
     {
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         List<CppStruct> validStructs = package.Structs
             .Where(s => ResolveConditions(package.Conditions, s.Conditions))
@@ -274,21 +276,14 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return sb.ToString();
     }
 
-    public bool ResolveConditions(List<string> conditions, List<string>? conditionsToResolve)
-    {
-        if (!Options.ResolveConditions)
-            return true;
-
-        return LangPrint.ResolveConditions(conditions, conditionsToResolve);
-    }
-
-    public string GetFileHeader(IEnumerable<string>? headingComment, string nameSpace, List<string>? pragmas, List<string>? includes, List<CppDefine>? defines, List<string>? typeDefs, string beforeNameSpace, out int indentLvl)
+    public string GetFileHeader(IEnumerable<string>? headingComment, string nameSpace, List<string>? pragmas, List<string>? includes, List<CppDefine>? defines,
+        List<string>? typeDefs, string beforeNameSpace, out int indentLvl)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         indentLvl = 0;
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Pragmas
         if (pragmas?.Count > 0)
@@ -332,7 +327,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Close NameSpace
         if (!string.IsNullOrWhiteSpace(nameSpace))
@@ -358,9 +353,11 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
 
         string headLine = string.Concat(Enumerable.Repeat("-", 50));
 
-        return Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText() +
-               Helper.GetIndent(indentLvl) + "// " + "# " + name + Options.GetNewLineText() +
-               Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText();
+        var ret = Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText() +
+                  Helper.GetIndent(indentLvl) + "// " + "# " + name + Options.GetNewLineText() +
+                  Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText();
+        
+        return new LangStringWriter(Options, ret).ToString();
     }
 
     public string GetMultiCommentString(IEnumerable<string>? comments, int baseIndentLvl, bool finalizeReturn = true)
@@ -379,9 +376,11 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
                      Helper.JoinString(Options.GetNewLineText(), eComments, $"{Helper.GetIndent(baseIndentLvl)} * ") +
                      $"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)} */";
 
-        return finalizeReturn
+        ret = finalizeReturn
             ? Helper.FinalizeSection(ret, Options.GetNewLineText())
             : ret + Options.GetNewLineText();
+
+        return new LangStringWriter(Options, ret).ToString();
     }
 
     public string GetParamString(CppParameter parameter)
@@ -389,7 +388,8 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        return $"{parameter.Type} {parameter.Name}";
+        var sb = new LangStringWriter(Options, $"{parameter.Type} {parameter.Name}");
+        return sb.ToString();
     }
 
     public string GetFieldString(CppField field, bool declaration, int baseIndentLvl, CppStruct? parent = null)
@@ -397,7 +397,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Comment
         sb.Append(GetMultiCommentString(field.Comments, baseIndentLvl, false));
@@ -430,7 +430,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         sb.Clear();
         sb.Append($"{prefix.PadRight(Options.VariableMemberTypePadSize)} ");
 
-        var nameSb = new StringBuilder();
+        var nameSb = new LangStringWriter(Options);
 
         // Parent name
         if (!declaration && parent is not null)
@@ -467,7 +467,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Comment
         sb.Append(GetMultiCommentString(@enum.Comments, baseIndentLvl, false));
@@ -531,7 +531,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
                         || func.TemplateParams.Count > 0
                         || func.Friend;
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Comment
         if (!declaration)
@@ -607,7 +607,7 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Comment
         sb.Append(GetMultiCommentString(@struct.Comments, baseIndentLvl, false));
@@ -880,7 +880,8 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         List<string> values = constants
-            .Where(c => !string.IsNullOrWhiteSpace(c.Name) && !string.IsNullOrWhiteSpace(c.Type) && !string.IsNullOrWhiteSpace(c.Value) && ResolveConditions(conditions, c.Conditions))
+            .Where(c => !string.IsNullOrWhiteSpace(c.Name) && !string.IsNullOrWhiteSpace(c.Type) && !string.IsNullOrWhiteSpace(c.Value) &&
+                        ResolveConditions(conditions, c.Conditions))
             .Select(c => $"static constexpr {c.Type} {c.Name} = {c.Value}")
             .ToList();
 
@@ -919,17 +920,17 @@ public class CppProcessor : ILangProcessor<CppPackage, CppLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public void Init(CppLangOptions? options = null)
+    public override void Init(CppLangOptions? options = null)
     {
         Options = options ?? new CppLangOptions();
     }
 
-    public CppPackage? ModelFromJson(string jsonData)
+    public override CppPackage? ModelFromJson(string jsonData)
     {
         return JsonConvert.DeserializeObject<CppPackage>(jsonData);
     }
 
-    public Dictionary<string, string> GenerateFiles(CppPackage cppPackage)
+    public override Dictionary<string, string> GenerateFiles(CppPackage cppPackage)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");

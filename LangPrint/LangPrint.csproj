@@ -5,11 +5,16 @@
         <Authors>CorrM</Authors>
         <Copyright>CorrM</Copyright>
         <PackageLicenseExpression>GPL-3.0-or-later</PackageLicenseExpression>
-        <PackageProjectUrl></PackageProjectUrl>
+        <PackageProjectUrl>https://github.com/CorrM/LangPrint</PackageProjectUrl>
         <RepositoryUrl>https://github.com/CorrM/LangPrint</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageTags/>
+        <PackageTags />
         <Nullable>enable</Nullable>
+        <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <Title>LangPrint</Title>
+        <PackageLicenseUrl></PackageLicenseUrl>
+        <AssemblyVersion>0.2.0</AssemblyVersion>
+        <FileVersion>0.2.0</FileVersion>
     </PropertyGroup>
 
     <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
@@ -18,7 +23,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <PackageReference Include="Newtonsoft.Json" Version="13.0.1"/>
+        <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     </ItemGroup>
 
 </Project>

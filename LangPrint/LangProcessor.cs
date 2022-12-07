@@ -3,10 +3,22 @@ using System.Linq;
 
 namespace LangPrint;
 
-public static class LangPrint
+public abstract class LangProcessor<TModel, TOptions> where TModel : ILang where TOptions : LangOptions
 {
-    public static bool ResolveConditions(List<string> conditions, List<string>? conditionsToResolve)
+    public abstract TOptions Options { get; protected set; }
+    // TModel? Model { get; }
+
+    public abstract void Init(TOptions? options = null);
+
+    public abstract TModel? ModelFromJson(string jsonData);
+
+    public abstract Dictionary<string, string> GenerateFiles(TModel cppModel);
+
+    public bool ResolveConditions(List<string> conditions, List<string>? conditionsToResolve)
     {
+        if (!Options.ResolveConditions)
+            return true;
+
         if (conditionsToResolve is null || conditionsToResolve.Count == 0)
             return true;
 

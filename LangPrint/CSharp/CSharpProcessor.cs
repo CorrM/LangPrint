@@ -1,19 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using LangPrint.Utils;
 using Newtonsoft.Json;
 
 namespace LangPrint.CSharp;
 
-public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
+public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOptions>
 {
-    public CSharpLangOptions Options { get; private set; } = null!;
+    public override CSharpLangOptions Options { get; protected set; } = null!;
 
     private string MakeCSharpFile(CSharpPackage package)
     {
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // File header
         sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Usings, package.BeforeNameSpace, out int indentLvl));
@@ -38,7 +37,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
 
     private string MakePackageStructsFile(CSharpPackage package)
     {
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // File header
         sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Usings, package.BeforeNameSpace, out int indentLvl));
@@ -63,7 +62,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
 
     private string MakePackageClassesFile(CSharpPackage package)
     {
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // File header
         sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Usings, package.BeforeNameSpace, out int indentLvl));
@@ -80,7 +79,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
 
     private string MakePackageInterfacesFile(CSharpPackage package)
     {
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // File header
         sb.Append(GetFileHeader(package.HeadingComment, package.NameSpace, package.Usings, package.BeforeNameSpace, out int indentLvl));
@@ -95,21 +94,13 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         return sb.ToString();
     }
 
-    public bool ResolveConditions(List<string> conditions, List<string> conditionsToResolve)
-    {
-        if (!Options.ResolveConditions)
-            return true;
-
-        return LangPrint.ResolveConditions(conditions, conditionsToResolve);
-    }
-
     public string GetFileHeader(IEnumerable<string> headingComment, string nameSpace, List<string>? usings, string beforeNameSpace, out int indentLvl)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         indentLvl = 0;
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // HeadingComment
         sb.Append(GetMultiCommentString(headingComment, indentLvl));
@@ -141,7 +132,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Close NameSpace
         if (!string.IsNullOrWhiteSpace(nameSpace))
@@ -167,9 +158,11 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
 
         string headLine = string.Concat(Enumerable.Repeat("-", 50));
 
-        return Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText() +
+        var ret = Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText() +
                Helper.GetIndent(indentLvl) + "// " + "# " + name + Options.GetNewLineText() +
                Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText();
+
+        return new LangStringWriter(Options, ret).ToString();
     }
 
     public string GetMultiCommentString(IEnumerable<string>? comments, int baseIndentLvl, bool finalizeReturn = true)
@@ -188,9 +181,11 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
                      Helper.JoinString(Options.GetNewLineText(), eComments, $"{Helper.GetIndent(baseIndentLvl)} * ") +
                      $"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)} */";
 
-        return finalizeReturn
+        ret = finalizeReturn
             ? Helper.FinalizeSection(ret, Options.GetNewLineText())
             : ret + Options.GetNewLineText();
+        
+        return new LangStringWriter(Options, ret).ToString();
     }
 
     public string GetAttributeString(CSharpAttribute attribute, int baseIndentLvl)
@@ -198,7 +193,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Comment
         sb.Append(GetMultiCommentString(attribute.Comments, baseIndentLvl, false));
@@ -239,7 +234,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Comment
         sb.Append(GetMultiCommentString(@delegate.Comments, baseIndentLvl, false));
@@ -291,7 +286,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Attributes
         if (parameter.Attributes.Count > 0)
@@ -319,7 +314,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Comment
         sb.Append(GetMultiCommentString(@event.Comments, baseIndentLvl, false));
@@ -334,7 +329,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         // Indent
         sb.Append(Helper.GetIndent(baseIndentLvl));
 
-        var firstPartSb = new StringBuilder();
+        var firstPartSb = new LangStringWriter(Options);
 
         // Access
         if (!string.IsNullOrWhiteSpace(@event.AccessModifier))
@@ -354,7 +349,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         string typePrefix = firstPartSb.ToString();
         sb.Append($"{typePrefix.PadRight(Options.FieldMemberTypePadSize)} ");
 
-        var nameSb = new StringBuilder();
+        var nameSb = new LangStringWriter(Options);
 
         // Name
         nameSb.Append($"{@event.Name};");
@@ -373,7 +368,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Comment
         sb.Append(GetMultiCommentString(field.Comments, baseIndentLvl, false));
@@ -388,7 +383,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         // Indent
         sb.Append(Helper.GetIndent(baseIndentLvl));
 
-        var firstPartSb = new StringBuilder();
+        var firstPartSb = new LangStringWriter(Options);
 
         // Access
         if (!string.IsNullOrWhiteSpace(field.AccessModifier))
@@ -417,7 +412,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         string typePrefix = firstPartSb.ToString();
         sb.Append($"{typePrefix.PadRight(Options.FieldMemberTypePadSize)} ");
 
-        var nameSb = new StringBuilder();
+        var nameSb = new LangStringWriter(Options);
 
         // Name
         nameSb.Append(field.Name);
@@ -442,7 +437,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Comment
         sb.Append(GetMultiCommentString(property.Comments, baseIndentLvl, false));
@@ -457,7 +452,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         // Indent
         sb.Append(Helper.GetIndent(baseIndentLvl));
 
-        var firstPartSb = new StringBuilder();
+        var firstPartSb = new LangStringWriter(Options);
 
         // Access
         if (!string.IsNullOrWhiteSpace(property.AccessModifier))
@@ -490,7 +485,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         string typePrefix = firstPartSb.ToString();
         sb.Append($"{typePrefix.PadRight(Options.FieldMemberTypePadSize)} ");
 
-        var nameSb = new StringBuilder();
+        var nameSb = new LangStringWriter(Options);
 
         // Name
         nameSb.Append(property.Name);
@@ -574,7 +569,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Comment
         sb.Append(GetMultiCommentString(@enum.Comments, baseIndentLvl, false));
@@ -645,7 +640,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Comment
         sb.Append(GetMultiCommentString(func.Comments, baseIndentLvl, false));
@@ -731,7 +726,7 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new StringBuilder();
+        var sb = new LangStringWriter(Options);
 
         // Comment
         sb.Append(GetMultiCommentString(@struct.Comments, baseIndentLvl, false));
@@ -1003,17 +998,17 @@ public class CSharpProcessor : ILangProcessor<CSharpPackage, CSharpLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public void Init(CSharpLangOptions? options = null)
+    public override void Init(CSharpLangOptions? options = null)
     {
         Options = options ?? new CSharpLangOptions();
     }
 
-    public CSharpPackage? ModelFromJson(string jsonData)
+    public override CSharpPackage? ModelFromJson(string jsonData)
     {
         return JsonConvert.DeserializeObject<CSharpPackage>(jsonData);
     }
 
-    public Dictionary<string, string> GenerateFiles(CSharpPackage cSharpPackage)
+    public override Dictionary<string, string> GenerateFiles(CSharpPackage cSharpPackage)
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
