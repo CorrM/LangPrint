@@ -194,6 +194,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(attribute, baseIndentLvl));
 
         // Comment
         sb.Append(GetMultiCommentString(attribute.Comments, baseIndentLvl, false));
@@ -226,6 +227,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         if (!string.IsNullOrEmpty(attribute.InlineComment))
             sb.Append($" // {attribute.InlineComment}");
 
+        sb.Append(GetAfterPrint(attribute, baseIndentLvl));
         return sb.ToString();
     }
 
@@ -235,6 +237,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(@delegate, baseIndentLvl));
 
         // Comment
         sb.Append(GetMultiCommentString(@delegate.Comments, baseIndentLvl, false));
@@ -278,6 +281,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
         sb.Append(Options.GetNewLineText());
 
+        sb.Append(GetAfterPrint(@delegate, baseIndentLvl));
         return sb.ToString();
     }
 
@@ -287,6 +291,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(parameter, 0));
 
         // Attributes
         if (parameter.Attributes.Count > 0)
@@ -306,6 +311,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         // Param
         sb.Append($"{parameter.Type} {parameter.Name}");
 
+        sb.Append(GetAfterPrint(parameter, 0));
         return sb.ToString();
     }
 
@@ -315,6 +321,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(@event, baseIndentLvl));
 
         // Comment
         sb.Append(GetMultiCommentString(@event.Comments, baseIndentLvl, false));
@@ -360,6 +367,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         else
             sb.Append(nameSb);
 
+        sb.Append(GetAfterPrint(@event, baseIndentLvl));
         return sb.ToString();
     }
 
@@ -369,6 +377,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(field, baseIndentLvl));
 
         // Comment
         sb.Append(GetMultiCommentString(field.Comments, baseIndentLvl, false));
@@ -429,6 +438,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         else
             sb.Append(nameSb);
 
+        sb.Append(GetAfterPrint(field, baseIndentLvl));
         return sb.ToString();
     }
 
@@ -438,6 +448,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(property, baseIndentLvl));
 
         // Comment
         sb.Append(GetMultiCommentString(property.Comments, baseIndentLvl, false));
@@ -561,6 +572,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         else
             sb.Append(nameSb);
 
+        sb.Append(GetAfterPrint(property, baseIndentLvl));
         return sb.ToString();
     }
 
@@ -570,6 +582,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(@enum, baseIndentLvl));
 
         // Comment
         sb.Append(GetMultiCommentString(@enum.Comments, baseIndentLvl, false));
@@ -632,6 +645,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         baseIndentLvl--;
         sb.Append($"{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
 
+        sb.Append(GetAfterPrint(@enum, baseIndentLvl));
         return sb.ToString();
     }
 
@@ -641,6 +655,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(func, baseIndentLvl));
 
         // Comment
         sb.Append(GetMultiCommentString(func.Comments, baseIndentLvl, false));
@@ -718,6 +733,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         baseIndentLvl--;
         sb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
 
+        sb.Append(GetAfterPrint(func, baseIndentLvl));
         return sb.ToString();
     }
 
@@ -727,6 +743,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(@struct, baseIndentLvl));
 
         // Comment
         sb.Append(GetMultiCommentString(@struct.Comments, baseIndentLvl, false));
@@ -829,6 +846,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         baseIndentLvl--;
         sb.Append($"{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
 
+        sb.Append(GetAfterPrint(@struct, baseIndentLvl));
         return sb.ToString();
     }
 

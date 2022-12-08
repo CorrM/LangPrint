@@ -13,4 +13,10 @@ public class PackageItemBase
 
     [JsonProperty("Conditions")]
     public List<string> Conditions { get; set; } = new();
+    
+    [JsonProperty("BeforePrint")]
+    public List<string> BeforePrint { get; set; } = new();
+    
+    [JsonProperty("AfterPrint")]
+    public List<string> AfterPrint { get; set; } = new();
 }

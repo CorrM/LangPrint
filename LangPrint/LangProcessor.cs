@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
+using LangPrint.Utils;
 
 namespace LangPrint;
 
@@ -14,6 +15,16 @@ public abstract class LangProcessor<TModel, TOptions> where TModel : ILang where
 
     public abstract Dictionary<string, string> GenerateFiles(TModel cppModel);
 
+    public string GetBeforePrint(PackageItemBase item, int baseIndentLvl)
+    {
+        return Helper.JoinString(Options.GetNewLineText(), item.BeforePrint, Helper.GetIndent(baseIndentLvl)) + Options.GetNewLineText();
+    }
+    
+    public string GetAfterPrint(PackageItemBase item, int baseIndentLvl)
+    {
+        return Helper.JoinString(Options.GetNewLineText(), item.AfterPrint, Helper.GetIndent(baseIndentLvl)) + Options.GetNewLineText();
+    }
+    
     public bool ResolveConditions(List<string> conditions, List<string>? conditionsToResolve)
     {
         if (!Options.ResolveConditions)

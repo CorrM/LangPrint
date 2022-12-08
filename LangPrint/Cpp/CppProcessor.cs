@@ -388,7 +388,12 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
 
-        var sb = new LangStringWriter(Options, $"{parameter.Type} {parameter.Name}");
+        var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(parameter, 0));
+        
+        sb.Append($"{parameter.Type} {parameter.Name}");
+        
+        sb.Append(GetAfterPrint(parameter, 0));
         return sb.ToString();
     }
 
@@ -398,6 +403,8 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
+        
+        sb.Append(GetBeforePrint(field, baseIndentLvl));
 
         // Comment
         sb.Append(GetMultiCommentString(field.Comments, baseIndentLvl, false));
@@ -459,6 +466,8 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         else
             sb.Append(nameSb);
 
+        sb.Append(GetAfterPrint(field, baseIndentLvl));
+        
         return sb.ToString();
     }
 
@@ -468,6 +477,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(@enum, baseIndentLvl));
 
         // Comment
         sb.Append(GetMultiCommentString(@enum.Comments, baseIndentLvl, false));
@@ -518,6 +528,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         baseIndentLvl--;
         sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
 
+        sb.Append(GetAfterPrint(@enum, baseIndentLvl));
         return sb.ToString();
     }
 
@@ -532,6 +543,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
                         || func.Friend;
 
         var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(func, baseIndentLvl));
 
         // Comment
         if (!declaration)
@@ -599,6 +611,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         baseIndentLvl--;
         sb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
 
+        sb.Append(GetAfterPrint(func, baseIndentLvl));
         return sb.ToString();
     }
 
@@ -608,6 +621,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
+        sb.Append(GetBeforePrint(@struct, baseIndentLvl));
 
         // Comment
         sb.Append(GetMultiCommentString(@struct.Comments, baseIndentLvl, false));
@@ -748,6 +762,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         baseIndentLvl--;
         sb.Append($"{Helper.GetIndent(baseIndentLvl)}}};{Options.GetNewLineText()}");
 
+        sb.Append(GetAfterPrint(@struct, baseIndentLvl));
         return sb.ToString();
     }
 
@@ -755,7 +770,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
-
+        
         string ret = Helper.JoinString(Options.GetNewLineText(), pragmas, $"{Helper.GetIndent(baseIndentLvl)}#pragma ");
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
