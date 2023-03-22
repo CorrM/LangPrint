@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Text;
 using LangPrint.Utils;
 using Newtonsoft.Json;
 
@@ -356,7 +354,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         var ret = Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText() +
                   Helper.GetIndent(indentLvl) + "// " + "# " + name + Options.GetNewLineText() +
                   Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText();
-        
+
         return new LangStringWriter(Options, ret).ToString();
     }
 
@@ -390,9 +388,9 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(parameter, 0));
-        
+
         sb.Append($"{parameter.Type} {parameter.Name}");
-        
+
         sb.Append(GetAfterPrint(parameter, 0));
         return sb.ToString();
     }
@@ -403,39 +401,38 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         var sb = new LangStringWriter(Options);
-        
+
         sb.Append(GetBeforePrint(field, baseIndentLvl));
 
         // Comment
         sb.Append(GetMultiCommentString(field.Comments, baseIndentLvl, false));
-
         sb.Append(Helper.GetIndent(baseIndentLvl));
+
+        var decSb = new LangStringWriter(Options);
 
         // Extern
         if (declaration && field.Extern)
-            sb.Append("extern ");
+            decSb.Append("extern ");
 
         // Static
         if (declaration && field.Static)
-            sb.Append("static ");
+            decSb.Append("static ");
 
         // Friend
         if (declaration && field.Friend)
-            sb.Append("friend ");
+            decSb.Append("friend ");
 
         // Const
         if (field.Const)
-            sb.Append("const ");
+            decSb.Append("const ");
 
         // Constexpr
         if (declaration && field.Constexpr)
-            sb.Append("constexpr ");
+            decSb.Append("constexpr ");
 
         // Type
-        sb.Append(field.Type);
-        string prefix = sb.ToString();
-        sb.Clear();
-        sb.Append($"{prefix.PadRight(Options.VariableMemberTypePadSize)} ");
+        decSb.Append(field.Type);
+        sb.Append($"{decSb.ToString().PadRight(Options.VariableMemberTypePadSize)} ");
 
         var nameSb = new LangStringWriter(Options);
 
@@ -467,7 +464,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             sb.Append(nameSb);
 
         sb.Append(GetAfterPrint(field, baseIndentLvl));
-        
+
         return sb.ToString();
     }
 
@@ -770,7 +767,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
     {
         if (Options is null)
             throw new Exception($"Call '{nameof(Init)}' function first");
-        
+
         string ret = Helper.JoinString(Options.GetNewLineText(), pragmas, $"{Helper.GetIndent(baseIndentLvl)}#pragma ");
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
