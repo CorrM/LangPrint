@@ -590,6 +590,8 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         if (declaration && !forceAddBody)
         {
             sb.Append(';');
+            sb.Append(GetAfterPrint(func, baseIndentLvl));
+            sb.Append(Options.GetNewLineText());
             return sb.ToString();
         }
 
@@ -609,6 +611,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         sb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}}}{Options.GetNewLineText()}");
 
         sb.Append(GetAfterPrint(func, baseIndentLvl));
+
         return sb.ToString();
     }
 
@@ -659,6 +662,10 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         // Open struct scope
         sb.Append($"{Helper.GetIndent(baseIndentLvl)}{{");
         baseIndentLvl++;
+
+        bool isEmpty = @struct.Fields.Count == 0 && @struct.Friends.Count == 0 && @struct.Methods.Count == 0;
+        if (isEmpty)
+            sb.Append(Options.GetNewLineText());
 
         // Fields
         if (@struct.Fields.Count > 0)
@@ -722,6 +729,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             sb.Append(Options.GetNewLineText());
 
             sb.Append(Helper.JoinString(Options.GetNewLineText(), @struct.Friends, $"{Helper.GetIndent(baseIndentLvl)}friend ", ";"));
+            sb.Append(Options.GetNewLineText());
         }
 
         // Methods
@@ -751,7 +759,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
                 // Print method
                 sb.Append(GetFunctionString(structMethod, @struct, true, baseIndentLvl, conditions));
-                sb.Append(Options.GetNewLineText());
             }
         }
 
