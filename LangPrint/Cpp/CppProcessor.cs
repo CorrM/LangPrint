@@ -351,9 +351,9 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
         string headLine = string.Concat(Enumerable.Repeat("-", 50));
 
-        var ret = Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText() +
-                  Helper.GetIndent(indentLvl) + "// " + "# " + name + Options.GetNewLineText() +
-                  Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText();
+        string ret = Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText() +
+                     Helper.GetIndent(indentLvl) + "// " + "# " + name + Options.GetNewLineText() +
+                     Helper.GetIndent(indentLvl) + "// " + headLine + Options.GetNewLineText();
 
         return new LangStringWriter(Options, ret).ToString();
     }
@@ -452,7 +452,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             nameSb.Append($" : {field.Bitfield}");
 
         // Value
-        if ((!string.IsNullOrWhiteSpace(field.Value) && !declaration) || (declaration && field.Constexpr))
+        if (!string.IsNullOrWhiteSpace(field.Value) && !declaration || declaration && field.Constexpr)
             nameSb.Append($" = {field.Value}");
 
         nameSb.Append(';');
@@ -535,7 +535,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
 
         bool forceAddBody = declaration;
-        forceAddBody &= (parent is not null && parent.TemplateParams.Count > 0)
+        forceAddBody &= parent is not null && parent.TemplateParams.Count > 0
                         || func.TemplateParams.Count > 0
                         || func.Friend;
 
@@ -580,7 +580,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
         // Params
         sb.Append('(');
-        sb.Append(string.Join(", ", func.Params.Where(p => (modelConditions is null || ResolveConditions(modelConditions, p.Conditions))).Select(GetParamString)));
+        sb.Append(string.Join(", ", func.Params.Where(p => modelConditions is null || ResolveConditions(modelConditions, p.Conditions)).Select(GetParamString)));
         sb.Append(')');
 
         // Const

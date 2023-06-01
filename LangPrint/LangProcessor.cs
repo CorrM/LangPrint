@@ -19,12 +19,12 @@ public abstract class LangProcessor<TModel, TOptions> where TModel : ILang where
     {
         return Helper.JoinString(Options.GetNewLineText(), item.BeforePrint, Helper.GetIndent(baseIndentLvl));
     }
-    
+
     public string GetAfterPrint(PackageItemBase item, int baseIndentLvl)
     {
         return Helper.JoinString(Options.GetNewLineText(), item.AfterPrint, Helper.GetIndent(baseIndentLvl));
     }
-    
+
     public bool ResolveConditions(List<string> conditions, List<string>? conditionsToResolve)
     {
         if (!Options.ResolveConditions)

@@ -8,7 +8,7 @@
         <PackageProjectUrl>https://github.com/CorrM/LangPrint</PackageProjectUrl>
         <RepositoryUrl>https://github.com/CorrM/LangPrint</RepositoryUrl>
         <RepositoryType>git</RepositoryType>
-        <PackageTags />
+        <PackageTags/>
         <Nullable>enable</Nullable>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
         <Title>LangPrint</Title>

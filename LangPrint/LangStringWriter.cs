@@ -32,7 +32,7 @@ public sealed class LangStringWriter
         _langOptions = langOptions;
         _sb = str is not null ? new StringBuilder(ResolveVariables(str)) : new StringBuilder();
     }
-    
+
     private string ResolveVariables(string str)
     {
         foreach (KeyValuePair<string, string> variable in _langOptions.Variables)
@@ -92,7 +92,7 @@ public sealed class LangStringWriter
         string val = Helper.GetIndent(IndentLevel) + value;
         _sb.AppendLine(ResolveVariables(val));
     }
-    
+
     /// <summary>
     /// Appends a copy of the specified char to this instance.
     /// </summary>
@@ -110,7 +110,7 @@ public sealed class LangStringWriter
     {
         _sb.Clear();
     }
-    
+
     /// <summary>
     /// Converts the value of this instance to a System.String.
     /// </summary>
