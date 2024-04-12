@@ -5,25 +5,15 @@ using LangPrint.Utils;
 namespace LangPrint;
 
 /// <summary>
-/// Custom <see cref="StringBuilder"/>
+///     Custom <see cref="StringBuilder" />
 /// </summary>
 public sealed class LangStringWriter
 {
-    private readonly StringBuilder _sb;
     private readonly LangOptions _langOptions;
+    private readonly StringBuilder _sb;
 
     /// <summary>
-    /// Current indent level
-    /// </summary>
-    public int IndentLevel { get; set; }
-
-    /// <summary>
-    /// String length
-    /// </summary>
-    public int Length => _sb.Length;
-
-    /// <summary>
-    /// Constructor
+    ///     Constructor
     /// </summary>
     /// <param name="langOptions">Language processor options</param>
     /// <param name="str">String to init builder with</param>
@@ -32,6 +22,16 @@ public sealed class LangStringWriter
         _langOptions = langOptions;
         _sb = str is not null ? new StringBuilder(ResolveVariables(str)) : new StringBuilder();
     }
+
+    /// <summary>
+    ///     Current indent level
+    /// </summary>
+    public int IndentLevel { get; set; }
+
+    /// <summary>
+    ///     String length
+    /// </summary>
+    public int Length => _sb.Length;
 
     private string ResolveVariables(string str)
     {
@@ -44,7 +44,7 @@ public sealed class LangStringWriter
     }
 
     /// <summary>
-    /// Removes the specified range of characters from this instance.
+    ///     Removes the specified range of characters from this instance.
     /// </summary>
     /// <param name="index">The zero-based position in this instance where removal begins.</param>
     /// <param name="len">The number of characters to remove.</param>
@@ -55,7 +55,7 @@ public sealed class LangStringWriter
     }
 
     /// <summary>
-    /// Replaces all occurrences of a specified string in this instance with another specified string.
+    ///     Replaces all occurrences of a specified string in this instance with another specified string.
     /// </summary>
     /// <param name="old">Text to be replaced</param>
     /// <param name="newStr">Text to replace with</param>
@@ -66,7 +66,7 @@ public sealed class LangStringWriter
     }
 
     /// <summary>
-    /// Appends a copy of the specified string to this instance.
+    ///     Appends a copy of the specified string to this instance.
     /// </summary>
     /// <param name="value">Text to append</param>
     public void Append(string value)
@@ -76,7 +76,7 @@ public sealed class LangStringWriter
     }
 
     /// <summary>
-    /// Appends a copy of the specified char to this instance.
+    ///     Appends a copy of the specified char to this instance.
     /// </summary>
     /// <param name="value">Char to add</param>
     public void Append(char value)
@@ -86,7 +86,7 @@ public sealed class LangStringWriter
     }
 
     /// <summary>
-    /// Appends a copy of the specified string to this instance.
+    ///     Appends a copy of the specified string to this instance.
     /// </summary>
     /// <param name="value">Text to append</param>
     public void AppendLine(string? value = null)
@@ -96,7 +96,7 @@ public sealed class LangStringWriter
     }
 
     /// <summary>
-    /// Appends a copy of the specified char to this instance.
+    ///     Appends a copy of the specified char to this instance.
     /// </summary>
     /// <param name="value">Char to append</param>
     public void AppendLine(char value)
@@ -106,7 +106,7 @@ public sealed class LangStringWriter
     }
 
     /// <summary>
-    /// Removes all characters from the current StringWriter instance
+    ///     Removes all characters from the current StringWriter instance
     /// </summary>
     public void Clear()
     {
@@ -114,7 +114,7 @@ public sealed class LangStringWriter
     }
 
     /// <summary>
-    /// Converts the value of this instance to a System.String.
+    ///     Converts the value of this instance to a System.String.
     /// </summary>
     /// <returns>A string whose value is the same as this instance.</returns>
     public override string ToString()
@@ -123,7 +123,7 @@ public sealed class LangStringWriter
     }
 
     /// <summary>
-    /// Cast to <see cref="string"/>
+    ///     Cast to <see cref="string" />
     /// </summary>
     public static implicit operator string(LangStringWriter builder)
     {

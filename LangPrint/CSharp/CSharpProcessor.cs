@@ -15,7 +15,9 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         var sb = new LangStringWriter(Options);
 
         // File header
-        sb.Append(GetFileHeader(package.HeadingComment,
+        sb.Append(
+            GetFileHeader(
+                package.HeadingComment,
                 package.NameSpace,
                 package.Usings,
                 package.BeforeNameSpace,
@@ -52,7 +54,9 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         var sb = new LangStringWriter(Options);
 
         // File header
-        sb.Append(GetFileHeader(package.HeadingComment,
+        sb.Append(
+            GetFileHeader(
+                package.HeadingComment,
                 package.NameSpace,
                 package.Usings,
                 package.BeforeNameSpace,
@@ -75,7 +79,9 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         // Structs
         if (package.Structs.Count > 0)
         {
-            sb.Append(GenerateStructs(package.Structs.Where(s => !s.IsClass && !s.IsInterface),
+            sb.Append(
+                GenerateStructs(
+                    package.Structs.Where(s => !s.IsClass && !s.IsInterface),
                     indentLvl,
                     package.Conditions
                 )
@@ -93,7 +99,9 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         var sb = new LangStringWriter(Options);
 
         // File header
-        sb.Append(GetFileHeader(package.HeadingComment,
+        sb.Append(
+            GetFileHeader(
+                package.HeadingComment,
                 package.NameSpace,
                 package.Usings,
                 package.BeforeNameSpace,
@@ -118,7 +126,9 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         var sb = new LangStringWriter(Options);
 
         // File header
-        sb.Append(GetFileHeader(package.HeadingComment,
+        sb.Append(
+            GetFileHeader(
+                package.HeadingComment,
                 package.NameSpace,
                 package.Usings,
                 package.BeforeNameSpace,
@@ -143,7 +153,8 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         string nameSpace,
         List<string>? usings,
         string beforeNameSpace,
-        out int indentLvl)
+        out int indentLvl
+    )
     {
         if (Options is null)
         {
@@ -217,19 +228,19 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
         string headLine = string.Concat(Enumerable.Repeat("-", 50));
 
-        string? ret = Helper.GetIndent(indentLvl)
-                      + "// "
-                      + headLine
-                      + Options.GetNewLineText()
-                      + Helper.GetIndent(indentLvl)
-                      + "// "
-                      + "# "
-                      + name
-                      + Options.GetNewLineText()
-                      + Helper.GetIndent(indentLvl)
-                      + "// "
-                      + headLine
-                      + Options.GetNewLineText();
+        string? ret = Helper.GetIndent(indentLvl) +
+                      "// " +
+                      headLine +
+                      Options.GetNewLineText() +
+                      Helper.GetIndent(indentLvl) +
+                      "// " +
+                      "# " +
+                      name +
+                      Options.GetNewLineText() +
+                      Helper.GetIndent(indentLvl) +
+                      "// " +
+                      headLine +
+                      Options.GetNewLineText();
 
         return new LangStringWriter(Options, ret).ToString();
     }
@@ -252,9 +263,9 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             return string.Empty;
         }
 
-        string ret = $"{Helper.GetIndent(baseIndentLvl)}/**{Options.GetNewLineText()}"
-                     + Helper.JoinString(Options.GetNewLineText(), eComments, $"{Helper.GetIndent(baseIndentLvl)} * ")
-                     + $"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)} */";
+        string ret = $"{Helper.GetIndent(baseIndentLvl)}/**{Options.GetNewLineText()}" +
+                     Helper.JoinString(Options.GetNewLineText(), eComments, $"{Helper.GetIndent(baseIndentLvl)} * ") +
+                     $"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)} */";
 
         ret = finalizeReturn
             ? Helper.FinalizeSection(ret, Options.GetNewLineText())
@@ -361,7 +372,9 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
         // Params
         sb.Append('(');
-        sb.Append(string.Join(", ",
+        sb.Append(
+            string.Join(
+                ", ",
                 @delegate.Params.Where(p => ResolveConditions(modelConditions, p.Conditions)).Select(GetParamString)
             )
         );
@@ -685,7 +698,9 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
             baseIndentLvl++;
             nameSb.Append($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}");
-            nameSb.Append(string.Join($"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}",
+            nameSb.Append(
+                string.Join(
+                    $"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)}",
                     i == 0 ? property.GetterCode : property.SetterCode
                 )
             );
@@ -781,7 +796,8 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         if (@enum.Values.Count > 0)
         {
             int biggestName = @enum.Values.Max(ev => ev.Name.Length);
-            IEnumerable<string> vals = @enum.Values.Select(ev =>
+            IEnumerable<string> vals = @enum.Values.Select(
+                ev =>
                 {
                     string value = @enum.HexValues && long.TryParse(ev.Value, out long iValue) && iValue >= 0
                         ? $"0x{iValue:X16}"
@@ -898,7 +914,9 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
         // Params
         sb.Append('(');
-        sb.Append(string.Join(", ",
+        sb.Append(
+            string.Join(
+                ", ",
                 func.Params.Where(p => ResolveConditions(modelConditions, p.Conditions)).Select(GetParamString)
             )
         );
@@ -1085,7 +1103,8 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
         }
 
-        string ret = Helper.JoinString(Options.GetNewLineText(),
+        string ret = Helper.JoinString(
+            Options.GetNewLineText(),
             usings,
             $"{Helper.GetIndent(baseIndentLvl)}using ",
             ";"
@@ -1096,7 +1115,8 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
     public string GenerateAttributes(
         IEnumerable<CSharpAttribute> attributes,
         int baseIndentLvl,
-        List<string> conditions)
+        List<string> conditions
+    )
     {
         if (Options is null)
         {
@@ -1125,9 +1145,10 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         }
 
         List<CSharpDelegate> dels = delegates
-            .Where(f => !string.IsNullOrWhiteSpace(f.Name)
-                        && !string.IsNullOrWhiteSpace(f.Type)
-                        && ResolveConditions(conditions, f.Conditions)
+            .Where(
+                f => !string.IsNullOrWhiteSpace(f.Name) &&
+                     !string.IsNullOrWhiteSpace(f.Type) &&
+                     ResolveConditions(conditions, f.Conditions)
             )
             .ToList();
 
@@ -1136,7 +1157,8 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             return string.Empty;
         }
 
-        string ret = string.Join(Options.GetNewLineText(),
+        string ret = string.Join(
+            Options.GetNewLineText(),
             dels.Select(f => GetDelegateString(f, baseIndentLvl, conditions))
         );
 
@@ -1156,9 +1178,10 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         }
 
         List<CSharpEvent> evs = events
-            .Where(f => !string.IsNullOrWhiteSpace(f.Name)
-                        && !string.IsNullOrWhiteSpace(f.Type)
-                        && ResolveConditions(conditions, f.Conditions)
+            .Where(
+                f => !string.IsNullOrWhiteSpace(f.Name) &&
+                     !string.IsNullOrWhiteSpace(f.Type) &&
+                     ResolveConditions(conditions, f.Conditions)
             )
             .ToList();
 
@@ -1167,7 +1190,8 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             return string.Empty;
         }
 
-        string ret = string.Join(Options.GetNewLineText(),
+        string ret = string.Join(
+            Options.GetNewLineText(),
             evs.Select(f => GetEventString(f, baseIndentLvl, conditions))
         );
 
@@ -1187,9 +1211,10 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         }
 
         List<CSharpField> vars = fields
-            .Where(v => !string.IsNullOrWhiteSpace(v.Name)
-                        && !string.IsNullOrWhiteSpace(v.Type)
-                        && ResolveConditions(conditions, v.Conditions)
+            .Where(
+                v => !string.IsNullOrWhiteSpace(v.Name) &&
+                     !string.IsNullOrWhiteSpace(v.Type) &&
+                     ResolveConditions(conditions, v.Conditions)
             )
             .ToList();
 
@@ -1198,7 +1223,8 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             return string.Empty;
         }
 
-        string ret = string.Join(Options.GetNewLineText(),
+        string ret = string.Join(
+            Options.GetNewLineText(),
             vars.Select(v => GetFieldString(v, baseIndentLvl, conditions))
         );
 
@@ -1218,9 +1244,10 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         }
 
         List<CSharpProperty> props = properties
-            .Where(v => !string.IsNullOrWhiteSpace(v.Name)
-                        && !string.IsNullOrWhiteSpace(v.Type)
-                        && ResolveConditions(conditions, v.Conditions)
+            .Where(
+                v => !string.IsNullOrWhiteSpace(v.Name) &&
+                     !string.IsNullOrWhiteSpace(v.Type) &&
+                     ResolveConditions(conditions, v.Conditions)
             )
             .ToList();
 
@@ -1229,7 +1256,8 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             return string.Empty;
         }
 
-        string ret = string.Join(Options.GetNewLineText(),
+        string ret = string.Join(
+            Options.GetNewLineText(),
             props.Select(p => GetPropertyString(p, baseIndentLvl, conditions))
         );
 
@@ -1249,9 +1277,10 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         }
 
         List<CSharpFunction> funcs = functions
-            .Where(f => !string.IsNullOrWhiteSpace(f.Name)
-                        && !string.IsNullOrWhiteSpace(f.Type)
-                        && ResolveConditions(conditions, f.Conditions)
+            .Where(
+                f => !string.IsNullOrWhiteSpace(f.Name) &&
+                     !string.IsNullOrWhiteSpace(f.Type) &&
+                     ResolveConditions(conditions, f.Conditions)
             )
             .ToList();
 
@@ -1260,7 +1289,8 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             return string.Empty;
         }
 
-        string ret = string.Join(Options.GetNewLineText(),
+        string ret = string.Join(
+            Options.GetNewLineText(),
             funcs.Select(f => GetFunctionString(f, baseIndentLvl, conditions))
         );
 
@@ -1314,7 +1344,8 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             return string.Empty;
         }
 
-        string ret = string.Join(Options.GetNewLineText(),
+        string ret = string.Join(
+            Options.GetNewLineText(),
             vStruct.Select(s => GetStructString(s, baseIndentLvl, conditions))
         );
 

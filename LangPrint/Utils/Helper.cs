@@ -9,7 +9,8 @@ public static class Helper
         string separator,
         IEnumerable<string> values,
         string prefix = null,
-        string suffix = null)
+        string suffix = null
+    )
     {
         return string.Join(separator, values.Select(s => $"{prefix}{s}{suffix}"));
     }

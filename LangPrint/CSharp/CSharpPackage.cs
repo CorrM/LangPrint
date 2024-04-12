@@ -282,9 +282,6 @@ public class CSharpStruct : PackageItemBase
 
 public class CSharpPackage : ILang
 {
-    [JsonProperty("Lang")]
-    public string Lang { get; private set; }
-
     [JsonProperty("Name")]
     public string Name { get; set; }
 
@@ -314,4 +311,7 @@ public class CSharpPackage : ILang
 
     [JsonProperty("Structs")]
     public List<CSharpStruct> Structs { get; set; } = new();
+
+    [JsonProperty("Lang")]
+    public string Lang { get; private set; }
 }

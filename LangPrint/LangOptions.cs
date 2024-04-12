@@ -6,7 +6,7 @@ namespace LangPrint;
 public enum NewLineType
 {
     CRLF,
-    LF
+    LF,
 }
 
 public abstract class LangOptions
@@ -23,7 +23,7 @@ public abstract class LangOptions
         {
             NewLineType.CRLF => "\r\n",
             NewLineType.LF => "\n",
-            _ => throw new ArgumentOutOfRangeException()
+            _ => throw new ArgumentOutOfRangeException(),
         };
     }
 }

@@ -168,9 +168,6 @@ public class CppStruct : PackageItemBase
 
 public class CppPackage : ILang
 {
-    [JsonProperty("Lang")]
-    public string Lang { get; private set; }
-
     [JsonProperty("Name")]
     public string Name { get; set; }
 
@@ -230,4 +227,7 @@ public class CppPackage : ILang
 
     [JsonProperty("Functions")]
     public List<CppFunction> Functions { get; set; } = new();
+
+    [JsonProperty("Lang")]
+    public string Lang { get; private set; }
 }
