@@ -5,7 +5,11 @@ namespace LangPrint.Utils;
 
 public static class Helper
 {
-    public static string JoinString(string separator, IEnumerable<string> values, string prefix = null, string suffix = null)
+    public static string JoinString(
+        string separator,
+        IEnumerable<string> values,
+        string prefix = null,
+        string suffix = null)
     {
         return string.Join(separator, values.Select(s => $"{prefix}{s}{suffix}"));
     }
@@ -21,13 +25,19 @@ public static class Helper
     public static string FinalizeSection(string sectionStr, string newLineStr)
     {
         if (string.IsNullOrWhiteSpace(sectionStr))
+        {
             return sectionStr;
+        }
 
         if (sectionStr.EndsWith(newLineStr + newLineStr))
+        {
             return sectionStr;
+        }
 
         if (sectionStr.EndsWith(newLineStr))
+        {
             return sectionStr + newLineStr;
+        }
 
         return sectionStr + newLineStr + newLineStr;
     }

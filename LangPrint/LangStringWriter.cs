@@ -36,7 +36,9 @@ public sealed class LangStringWriter
     private string ResolveVariables(string str)
     {
         foreach (KeyValuePair<string, string> variable in _langOptions.Variables)
+        {
             str = str.Replace($"{{{_langOptions.VariablePrefix}{variable.Key}}}", variable.Value);
+        }
 
         return str;
     }

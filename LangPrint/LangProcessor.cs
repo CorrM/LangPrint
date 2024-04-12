@@ -28,21 +28,29 @@ public abstract class LangProcessor<TModel, TOptions> where TModel : ILang where
     public bool ResolveConditions(List<string> conditions, List<string>? conditionsToResolve)
     {
         if (!Options.ResolveConditions)
-            return true;
-
-        if (conditionsToResolve is null || conditionsToResolve.Count == 0)
-            return true;
-
-        // ! conditions
-        foreach (string condition in conditionsToResolve.Where(c => !string.IsNullOrWhiteSpace(c) && c.StartsWith("!")))
         {
-            if (conditions.Any(gCondition => condition[1..] == gCondition))
-                return false;
+            return true;
         }
 
-        // All conditions must to be fitted
+        if (conditionsToResolve is null || conditionsToResolve.Count == 0)
+        {
+            return true;
+        }
+
+        // ! conditions
+        IEnumerable<string> conds = conditionsToResolve
+            .Where(c => !string.IsNullOrWhiteSpace(c) && c.StartsWith('!'));
+        foreach (string condition in conds)
+        {
+            if (conditions.Exists(gCondition => condition[1..] == gCondition))
+            {
+                return false;
+            }
+        }
+
+        // All conditions must be fitted
         return conditionsToResolve
-            .Where(c => !string.IsNullOrWhiteSpace(c) && !c.StartsWith("!"))
+            .Where(c => !string.IsNullOrWhiteSpace(c) && !c.StartsWith('!'))
             .All(conditions.Contains);
     }
 }
