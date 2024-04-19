@@ -228,19 +228,19 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
         string headLine = string.Concat(Enumerable.Repeat("-", 50));
 
-        string? ret = Helper.GetIndent(indentLvl) +
-                      "// " +
-                      headLine +
-                      Options.GetNewLineText() +
-                      Helper.GetIndent(indentLvl) +
-                      "// " +
-                      "# " +
-                      name +
-                      Options.GetNewLineText() +
-                      Helper.GetIndent(indentLvl) +
-                      "// " +
-                      headLine +
-                      Options.GetNewLineText();
+        string ret = Helper.GetIndent(indentLvl) +
+                     "// " +
+                     headLine +
+                     Options.GetNewLineText() +
+                     Helper.GetIndent(indentLvl) +
+                     "// " +
+                     "# " +
+                     name +
+                     Options.GetNewLineText() +
+                     Helper.GetIndent(indentLvl) +
+                     "// " +
+                     headLine +
+                     Options.GetNewLineText();
 
         return new LangStringWriter(Options, ret).ToString();
     }
