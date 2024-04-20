@@ -38,8 +38,7 @@ public abstract class LangProcessor<TModel, TOptions> where TModel : ILang where
         }
 
         // ! conditions
-        IEnumerable<string> conds = conditionsToResolve
-            .Where(c => !string.IsNullOrWhiteSpace(c) && c.StartsWith('!'));
+        IEnumerable<string> conds = conditionsToResolve.Where(c => !string.IsNullOrWhiteSpace(c) && c.StartsWith('!'));
         foreach (string condition in conds)
         {
             if (conditions.Exists(gCondition => condition[1..] == gCondition))
@@ -49,8 +48,7 @@ public abstract class LangProcessor<TModel, TOptions> where TModel : ILang where
         }
 
         // All conditions must be fitted
-        return conditionsToResolve
-            .Where(c => !string.IsNullOrWhiteSpace(c) && !c.StartsWith('!'))
+        return conditionsToResolve.Where(c => !string.IsNullOrWhiteSpace(c) && !c.StartsWith('!'))
             .All(conditions.Contains);
     }
 }

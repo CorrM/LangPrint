@@ -80,11 +80,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         if (package.Structs.Count > 0)
         {
             sb.Append(
-                GenerateStructs(
-                    package.Structs.Where(s => !s.IsClass && !s.IsInterface),
-                    indentLvl,
-                    package.Conditions
-                )
+                GenerateStructs(package.Structs.Where(s => !s.IsClass && !s.IsInterface), indentLvl, package.Conditions)
             );
         }
 
@@ -267,9 +263,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
                      Helper.JoinString(Options.GetNewLineText(), eComments, $"{Helper.GetIndent(baseIndentLvl)} * ") +
                      $"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)} */";
 
-        ret = finalizeReturn
-            ? Helper.FinalizeSection(ret, Options.GetNewLineText())
-            : ret + Options.GetNewLineText();
+        ret = finalizeReturn ? Helper.FinalizeSection(ret, Options.GetNewLineText()) : ret + Options.GetNewLineText();
 
         return new LangStringWriter(Options, ret).ToString();
     }
@@ -807,11 +801,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
                 }
             );
 
-            string values = Helper.JoinString(
-                "," + Options.GetNewLineText(),
-                vals,
-                Helper.GetIndent(baseIndentLvl)
-            );
+            string values = Helper.JoinString("," + Options.GetNewLineText(), vals, Helper.GetIndent(baseIndentLvl));
 
             sb.Append(values);
         }
@@ -1144,8 +1134,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
         }
 
-        List<CSharpDelegate> dels = delegates
-            .Where(
+        List<CSharpDelegate> dels = delegates.Where(
                 f => !string.IsNullOrWhiteSpace(f.Name) &&
                      !string.IsNullOrWhiteSpace(f.Type) &&
                      ResolveConditions(conditions, f.Conditions)
@@ -1177,8 +1166,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
         }
 
-        List<CSharpEvent> evs = events
-            .Where(
+        List<CSharpEvent> evs = events.Where(
                 f => !string.IsNullOrWhiteSpace(f.Name) &&
                      !string.IsNullOrWhiteSpace(f.Type) &&
                      ResolveConditions(conditions, f.Conditions)
@@ -1210,8 +1198,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
         }
 
-        List<CSharpField> vars = fields
-            .Where(
+        List<CSharpField> vars = fields.Where(
                 v => !string.IsNullOrWhiteSpace(v.Name) &&
                      !string.IsNullOrWhiteSpace(v.Type) &&
                      ResolveConditions(conditions, v.Conditions)
@@ -1243,8 +1230,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
         }
 
-        List<CSharpProperty> props = properties
-            .Where(
+        List<CSharpProperty> props = properties.Where(
                 v => !string.IsNullOrWhiteSpace(v.Name) &&
                      !string.IsNullOrWhiteSpace(v.Type) &&
                      ResolveConditions(conditions, v.Conditions)
@@ -1276,8 +1262,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             throw new Exception($"Call '{nameof(Init)}' function first");
         }
 
-        List<CSharpFunction> funcs = functions
-            .Where(
+        List<CSharpFunction> funcs = functions.Where(
                 f => !string.IsNullOrWhiteSpace(f.Name) &&
                      !string.IsNullOrWhiteSpace(f.Type) &&
                      ResolveConditions(conditions, f.Conditions)

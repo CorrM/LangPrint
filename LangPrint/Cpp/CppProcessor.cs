@@ -83,8 +83,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         );
 
         // Static fields
-        IEnumerable<CppField> staticVars = validStructs
-            .SelectMany(s => s.Fields)
+        IEnumerable<CppField> staticVars = validStructs.SelectMany(s => s.Fields)
             .Where(v => ResolveConditions(package.Conditions, v.Conditions));
 
         if (staticVars.Any(v => v.Static))
@@ -94,8 +93,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
             foreach (CppStruct @struct in validStructs)
             {
-                List<string> variables = @struct.Fields
-                    .Where(v => v.Static && !v.Constexpr)
+                List<string> variables = @struct.Fields.Where(v => v.Static && !v.Constexpr)
                     .Select(v => GetFieldString(v, false, indentLvl, @struct))
                     .ToList();
 
@@ -248,7 +246,11 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         sb.Append(Options.GetNewLineText());
 
         // Package include
-        var packHeaders = new List<string> { $"\"{package.Name}_Structs.h\"", $"\"{package.Name}_Classes.h\"" };
+        var packHeaders = new List<string>
+        {
+            $"\"{package.Name}_Structs.h\"",
+            $"\"{package.Name}_Classes.h\"",
+        };
         packHeaders.AddRange(package.PackageHeaderIncludes);
         sb.Append(GenerateIncludes(packHeaders, indentLvl));
 
@@ -286,8 +288,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         );
 
         // Static fields
-        IEnumerable<CppField> staticVars = validStructs
-            .SelectMany(s => s.Fields)
+        IEnumerable<CppField> staticVars = validStructs.SelectMany(s => s.Fields)
             .Where(v => ResolveConditions(package.Conditions, v.Conditions));
 
         if (staticVars.Any(v => v.Static))
@@ -297,8 +298,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
             foreach (CppStruct @struct in validStructs)
             {
-                List<string> variables = @struct.Fields
-                    .Where(v => ResolveConditions(package.Conditions, v.Conditions))
+                List<string> variables = @struct.Fields.Where(v => ResolveConditions(package.Conditions, v.Conditions))
                     .Where(v => v.Static && !v.Constexpr)
                     .Select(v => GetFieldString(v, false, indentLvl, @struct))
                     .ToList();
@@ -492,9 +492,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
                      Helper.JoinString(Options.GetNewLineText(), eComments, $"{Helper.GetIndent(baseIndentLvl)} * ") +
                      $"{Options.GetNewLineText()}{Helper.GetIndent(baseIndentLvl)} */";
 
-        ret = finalizeReturn
-            ? Helper.FinalizeSection(ret, Options.GetNewLineText())
-            : ret + Options.GetNewLineText();
+        ret = finalizeReturn ? Helper.FinalizeSection(ret, Options.GetNewLineText()) : ret + Options.GetNewLineText();
 
         return new LangStringWriter(Options, ret).ToString();
     }
@@ -665,11 +663,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
                 }
             );
 
-            string values = Helper.JoinString(
-                "," + Options.GetNewLineText(),
-                vals,
-                Helper.GetIndent(baseIndentLvl)
-            );
+            string values = Helper.JoinString("," + Options.GetNewLineText(), vals, Helper.GetIndent(baseIndentLvl));
 
             sb.Append(values);
         }
@@ -879,8 +873,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
             bool lastVarIsPrivate = false;
             bool lastVarIsUnion = false;
-            List<CppField> variables = @struct.Fields
-                .Where(
+            List<CppField> variables = @struct.Fields.Where(
                     v => !string.IsNullOrWhiteSpace(v.Name) &&
                          (conditions is null || ResolveConditions(conditions, v.Conditions))
                 )
@@ -955,8 +948,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             sb.Append(Options.GetNewLineText());
 
             bool lastMethodIsPrivate = false;
-            List<CppFunction> methods = @struct.Methods
-                .Where(
+            List<CppFunction> methods = @struct.Methods.Where(
                     m => !string.IsNullOrWhiteSpace(m.Name) &&
                          (conditions is null || ResolveConditions(conditions, m.Conditions))
                 )
@@ -1087,8 +1079,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
         }
 
-        List<CppField> vars = fields
-            .Where(
+        List<CppField> vars = fields.Where(
                 v => !string.IsNullOrWhiteSpace(v.Name) &&
                      !string.IsNullOrWhiteSpace(v.Type) &&
                      ResolveConditions(conditions, v.Conditions)
@@ -1126,8 +1117,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
         }
 
-        List<CppFunction> funcs = functions
-            .Where(
+        List<CppFunction> funcs = functions.Where(
                 f => !string.IsNullOrWhiteSpace(f.Name) &&
                      !string.IsNullOrWhiteSpace(f.Type) &&
                      ResolveConditions(conditions, f.Conditions)
@@ -1200,12 +1190,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             return string.Empty;
         }
 
-        string ret = Helper.JoinString(
-            Options.GetNewLineText(),
-            values,
-            Helper.GetIndent(baseIndentLvl),
-            ";"
-        );
+        string ret = Helper.JoinString(Options.GetNewLineText(), values, Helper.GetIndent(baseIndentLvl), ";");
 
         if (Options.PrintSectionName && values.Count > 0)
         {
@@ -1222,8 +1207,7 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
             throw new Exception($"Call '{nameof(Init)}' function first");
         }
 
-        List<CppStruct> vStruct = structs
-            .Where(
+        List<CppStruct> vStruct = structs.Where(
                 s => !string.IsNullOrWhiteSpace(s.Name) &&
                      (conditions is null || ResolveConditions(conditions, s.Conditions))
             )
