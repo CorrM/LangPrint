@@ -4,16 +4,10 @@ using LangPrint.Utils;
 
 namespace LangPrint;
 
-public abstract class LangProcessor<TModel, TOptions> where TModel : ILang where TOptions : LangOptions
+public abstract class LangProcessor<TOptions> where TOptions : LangOptions
 {
     public abstract TOptions Options { get; protected set; }
     // TModel? Model { get; }
-
-    public abstract void Init(TOptions? options = null);
-
-    public abstract TModel? ModelFromJson(string jsonData);
-
-    public abstract Dictionary<string, string> GenerateFiles(TModel cppModel);
 
     public string GetBeforePrint(PackageItemBase item, int baseIndentLvl)
     {
@@ -41,7 +35,9 @@ public abstract class LangProcessor<TModel, TOptions> where TModel : ILang where
         IEnumerable<string> conds = conditionsToResolve.Where(c => !string.IsNullOrWhiteSpace(c) && c.StartsWith('!'));
         foreach (string condition in conds)
         {
-            if (conditions.Exists(gCondition => condition[1..] == gCondition))
+            if (conditions.Exists(
+                    gCondition => string.Equals(condition[1..], gCondition, System.StringComparison.Ordinal)
+                ))
             {
                 return false;
             }

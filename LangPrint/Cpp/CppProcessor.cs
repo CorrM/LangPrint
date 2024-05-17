@@ -6,9 +6,14 @@ using Newtonsoft.Json;
 
 namespace LangPrint.Cpp;
 
-public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
+public sealed class CppProcessor : LangProcessor<CppLangOptions>
 {
-    public override CppLangOptions Options { get; protected set; } = null!;
+    public override CppLangOptions Options { get; protected set; }
+
+    public CppProcessor(CppLangOptions options)
+    {
+        Options = options;
+    }
 
     private string MakeHeaderFile(CppPackage package)
     {
@@ -363,11 +368,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         out int indentLvl
     )
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         indentLvl = 0;
         var sb = new LangStringWriter(Options);
 
@@ -418,11 +418,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GetFileFooter(string nameSpace, string afterNameSpace, ref int indentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
 
         // Close NameSpace
@@ -446,11 +441,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GetSectionHeading(string name, int indentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         string headLine = string.Concat(Enumerable.Repeat("-", 50));
 
         string ret = Helper.GetIndent(indentLvl) +
@@ -472,11 +462,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GetMultiCommentString(IEnumerable<string>? comments, int baseIndentLvl, bool finalizeReturn = true)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         if (comments is null)
         {
             return string.Empty;
@@ -499,11 +484,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GetParamString(CppParameter parameter)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(parameter, 0));
 
@@ -515,11 +495,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GetFieldString(CppField field, bool declaration, int baseIndentLvl, CppStruct? parent = null)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
 
         sb.Append(GetBeforePrint(field, baseIndentLvl));
@@ -612,11 +587,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GetEnumString(CppEnum @enum, int baseIndentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(@enum, baseIndentLvl));
 
@@ -686,11 +656,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         List<string>? modelConditions
     )
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         bool forceAddBody = declaration;
         forceAddBody &= (parent is not null && parent.TemplateParams.Count > 0) ||
                         func.TemplateParams.Count > 0 ||
@@ -800,11 +765,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GetStructString(CppStruct @struct, int baseIndentLvl, List<string>? conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(@struct, baseIndentLvl));
 
@@ -986,22 +946,12 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GeneratePragmas(IEnumerable<string> pragmas, int baseIndentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         string ret = Helper.JoinString(Options.GetNewLineText(), pragmas, $"{Helper.GetIndent(baseIndentLvl)}#pragma ");
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
     public string GenerateIncludes(IEnumerable<string> includes, int baseIndentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         string ret = Helper.JoinString(
             Options.GetNewLineText(),
             includes,
@@ -1012,11 +962,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GenerateDefines(IEnumerable<CppDefine> defines, int baseIndentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         string ret = Helper.JoinString(
             Options.GetNewLineText(),
             defines.Select(d => d.Name + (string.IsNullOrWhiteSpace(d.Value) ? string.Empty : $" {d.Value}")),
@@ -1028,11 +973,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GenerateTypeDefs(IEnumerable<string> typeDefs, int baseIndentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         string ret = Helper.JoinString(
             Options.GetNewLineText(),
             typeDefs,
@@ -1045,11 +985,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GenerateForwards(IEnumerable<string> forwards, int baseIndentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         IEnumerable<string> forwardsList = forwards.ToList();
         if (!forwardsList.Any())
         {
@@ -1074,11 +1009,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         List<string> conditions
     )
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<CppField> vars = fields.Where(
                 v => !string.IsNullOrWhiteSpace(v.Name) &&
                      !string.IsNullOrWhiteSpace(v.Type) &&
@@ -1112,11 +1042,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         List<string> conditions
     )
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<CppFunction> funcs = functions.Where(
                 f => !string.IsNullOrWhiteSpace(f.Name) &&
                      !string.IsNullOrWhiteSpace(f.Type) &&
@@ -1144,11 +1069,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GenerateEnums(IEnumerable<CppEnum> enums, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<CppEnum> vEnums = enums
             .Where(e => !string.IsNullOrWhiteSpace(e.Name) && ResolveConditions(conditions, e.Conditions))
             .ToList();
@@ -1170,11 +1090,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GenerateConstants(IEnumerable<CppConstant> constants, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<string> values = constants
             .Where(
                 c => !string.IsNullOrWhiteSpace(c.Name) &&
@@ -1202,11 +1117,6 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
 
     public string GenerateStructs(IEnumerable<CppStruct> structs, int baseIndentLvl, List<string>? conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<CppStruct> vStruct = structs.Where(
                 s => !string.IsNullOrWhiteSpace(s.Name) &&
                      (conditions is null || ResolveConditions(conditions, s.Conditions))
@@ -1231,26 +1141,16 @@ public sealed class CppProcessor : LangProcessor<CppPackage, CppLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public override void Init(CppLangOptions? options = null)
-    {
-        Options = options ?? new CppLangOptions();
-    }
-
-    public override CppPackage? ModelFromJson(string jsonData)
+    public CppPackage? ModelFromJson(string jsonData)
     {
         return JsonConvert.DeserializeObject<CppPackage>(jsonData);
     }
 
-    public override Dictionary<string, string> GenerateFiles(CppPackage cppPackage)
+    public Dictionary<string, string> GenerateFiles(CppPackage cppPackage)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         cppPackage.Conditions = cppPackage.Conditions.Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
 
-        var ret = new Dictionary<string, string>();
+        var ret = new Dictionary<string, string>(StringComparer.Ordinal);
 
         if (!Options.GeneratePackageSyntax)
         {
