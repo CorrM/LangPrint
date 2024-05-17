@@ -1,14 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using LangPrint.Utils;
 using Newtonsoft.Json;
 
 namespace LangPrint.CSharp;
 
-public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOptions>
+public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
 {
-    public override CSharpLangOptions Options { get; protected set; } = null!;
+    public override CSharpLangOptions Options { get; protected set; }
+
+    public CSharpProcessor(CSharpLangOptions? options = null)
+    {
+        Options = options ?? new CSharpLangOptions();
+    }
 
     private string MakeCSharpFile(CSharpPackage package)
     {
@@ -152,11 +158,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         out int indentLvl
     )
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         indentLvl = 0;
         var sb = new LangStringWriter(Options);
 
@@ -189,11 +190,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GetFileFooter(string nameSpace, string afterNameSpace, ref int indentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
 
         // Close NameSpace
@@ -217,11 +213,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GetSectionHeading(string name, int indentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         string headLine = string.Concat(Enumerable.Repeat("-", 50));
 
         string ret = Helper.GetIndent(indentLvl) +
@@ -243,11 +234,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GetMultiCommentString(IEnumerable<string>? comments, int baseIndentLvl, bool finalizeReturn = true)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         if (comments is null)
         {
             return string.Empty;
@@ -270,11 +256,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GetAttributeString(CSharpAttribute attribute, int baseIndentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(attribute, baseIndentLvl));
 
@@ -319,11 +300,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GetDelegateString(CSharpDelegate @delegate, int baseIndentLvl, List<string> modelConditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(@delegate, baseIndentLvl));
 
@@ -388,11 +364,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GetParamString(CSharpParameter parameter)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(parameter, 0));
 
@@ -424,11 +395,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GetEventString(CSharpEvent @event, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(@event, baseIndentLvl));
 
@@ -490,11 +456,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GetFieldString(CSharpField field, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(field, baseIndentLvl));
 
@@ -579,11 +540,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GetPropertyString(CSharpProperty property, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(property, baseIndentLvl));
 
@@ -738,11 +694,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GetEnumString(CSharpEnum @enum, int baseIndentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(@enum, baseIndentLvl));
 
@@ -793,9 +744,12 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
             IEnumerable<string> vals = @enum.Values.Select(
                 ev =>
                 {
-                    string value = @enum.HexValues && long.TryParse(ev.Value, out long iValue) && iValue >= 0
-                        ? $"0x{iValue:X16}"
-                        : ev.Value;
+                    string value =
+                        @enum.HexValues &&
+                        long.TryParse(ev.Value, NumberFormatInfo.InvariantInfo, out long iValue) &&
+                        iValue >= 0
+                            ? $"0x{iValue:X16}"
+                            : ev.Value;
 
                     return $"{ev.Name.PadRight(biggestName)} = {value}";
                 }
@@ -818,11 +772,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GetFunctionString(CSharpFunction func, int baseIndentLvl, List<string> modelConditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(func, baseIndentLvl));
 
@@ -935,11 +884,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GetStructString(CSharpStruct @struct, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(@struct, baseIndentLvl));
 
@@ -1088,11 +1032,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GenerateUsings(IEnumerable<string> usings, int baseIndentLvl)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         string ret = Helper.JoinString(
             Options.GetNewLineText(),
             usings,
@@ -1108,11 +1047,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         List<string> conditions
     )
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<CSharpAttribute> attribute = attributes
             .Where(v => !string.IsNullOrWhiteSpace(v.Name) && ResolveConditions(conditions, v.Conditions))
             .ToList();
@@ -1129,11 +1063,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GenerateDelegates(IEnumerable<CSharpDelegate> delegates, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<CSharpDelegate> dels = delegates.Where(
                 f => !string.IsNullOrWhiteSpace(f.Name) &&
                      !string.IsNullOrWhiteSpace(f.Type) &&
@@ -1161,11 +1090,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GenerateEvents(IEnumerable<CSharpEvent> events, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<CSharpEvent> evs = events.Where(
                 f => !string.IsNullOrWhiteSpace(f.Name) &&
                      !string.IsNullOrWhiteSpace(f.Type) &&
@@ -1193,11 +1117,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GenerateFields(IEnumerable<CSharpField> fields, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<CSharpField> vars = fields.Where(
                 v => !string.IsNullOrWhiteSpace(v.Name) &&
                      !string.IsNullOrWhiteSpace(v.Type) &&
@@ -1225,11 +1144,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GenerateProperties(IEnumerable<CSharpProperty> properties, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<CSharpProperty> props = properties.Where(
                 v => !string.IsNullOrWhiteSpace(v.Name) &&
                      !string.IsNullOrWhiteSpace(v.Type) &&
@@ -1257,11 +1171,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GenerateFunctions(IEnumerable<CSharpFunction> functions, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<CSharpFunction> funcs = functions.Where(
                 f => !string.IsNullOrWhiteSpace(f.Name) &&
                      !string.IsNullOrWhiteSpace(f.Type) &&
@@ -1289,11 +1198,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GenerateEnums(IEnumerable<CSharpEnum> enums, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<CSharpEnum> vEnums = enums
             .Where(e => !string.IsNullOrWhiteSpace(e.Name) && ResolveConditions(conditions, e.Conditions))
             .ToList();
@@ -1315,11 +1219,6 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
 
     public string GenerateStructs(IEnumerable<CSharpStruct> structs, int baseIndentLvl, List<string> conditions)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         List<CSharpStruct> vStruct = structs
             .Where(s => !string.IsNullOrWhiteSpace(s.Name) && ResolveConditions(conditions, s.Conditions))
             .ToList();
@@ -1342,26 +1241,16 @@ public sealed class CSharpProcessor : LangProcessor<CSharpPackage, CSharpLangOpt
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public override void Init(CSharpLangOptions? options = null)
-    {
-        Options = options ?? new CSharpLangOptions();
-    }
-
-    public override CSharpPackage? ModelFromJson(string jsonData)
+    public CSharpPackage? ModelFromJson(string jsonData)
     {
         return JsonConvert.DeserializeObject<CSharpPackage>(jsonData);
     }
 
-    public override Dictionary<string, string> GenerateFiles(CSharpPackage cSharpPackage)
+    public Dictionary<string, string> GenerateFiles(CSharpPackage cSharpPackage)
     {
-        if (Options is null)
-        {
-            throw new Exception($"Call '{nameof(Init)}' function first");
-        }
-
         cSharpPackage.Conditions = cSharpPackage.Conditions.Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
 
-        var ret = new Dictionary<string, string>();
+        var ret = new Dictionary<string, string>(StringComparer.Ordinal);
 
         if (!Options.GeneratePackageSyntax)
         {

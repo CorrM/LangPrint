@@ -7,7 +7,6 @@ namespace LangPrint;
 public abstract class LangProcessor<TOptions> where TOptions : LangOptions
 {
     public abstract TOptions Options { get; protected set; }
-    // TModel? Model { get; }
 
     public string GetBeforePrint(PackageItemBase item, int baseIndentLvl)
     {

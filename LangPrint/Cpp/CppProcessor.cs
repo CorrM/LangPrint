@@ -10,9 +10,9 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
 {
     public override CppLangOptions Options { get; protected set; }
 
-    public CppProcessor(CppLangOptions options)
+    public CppProcessor(CppLangOptions? options = null)
     {
-        Options = options;
+        Options = options ?? new CppLangOptions();
     }
 
     private string MakeHeaderFile(CppPackage package)
