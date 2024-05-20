@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using LangPrint.Utils;
-using Newtonsoft.Json;
 
 namespace LangPrint.CSharp;
 
@@ -34,19 +33,19 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         // Delegates
         if (package.Delegates.Count > 0)
         {
-            sb.Append(GenerateDelegates(package.Delegates, indentLvl, package.Conditions));
+            sb.Append(GenerateDelegates(package.Delegates, indentLvl));
         }
 
         // Enums
         if (package.Enums.Count > 0)
         {
-            sb.Append(GenerateEnums(package.Enums, indentLvl, package.Conditions));
+            sb.Append(GenerateEnums(package.Enums, indentLvl));
         }
 
         // Structs
         if (package.Structs.Count > 0)
         {
-            sb.Append(GenerateStructs(package.Structs, indentLvl, package.Conditions));
+            sb.Append(GenerateStructs(package.Structs, indentLvl));
         }
 
         // File footer
@@ -73,20 +72,20 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         // Delegates
         if (package.Delegates.Count > 0)
         {
-            sb.Append(GenerateDelegates(package.Delegates, indentLvl, package.Conditions));
+            sb.Append(GenerateDelegates(package.Delegates, indentLvl));
         }
 
         // Enums
         if (package.Enums.Count > 0)
         {
-            sb.Append(GenerateEnums(package.Enums, indentLvl, package.Conditions));
+            sb.Append(GenerateEnums(package.Enums, indentLvl));
         }
 
         // Structs
         if (package.Structs.Count > 0)
         {
             sb.Append(
-                GenerateStructs(package.Structs.Where(s => !s.IsClass && !s.IsInterface), indentLvl, package.Conditions)
+                GenerateStructs(package.Structs.Where(s => s is { IsClass: false, IsInterface: false }), indentLvl)
             );
         }
 
@@ -114,7 +113,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         // Classes
         if (package.Structs.Count > 0)
         {
-            sb.Append(GenerateStructs(package.Structs.Where(s => s.IsClass), indentLvl, package.Conditions));
+            sb.Append(GenerateStructs(package.Structs.Where(s => s.IsClass), indentLvl));
         }
 
         // File footer
@@ -141,7 +140,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         // Interfaces
         if (package.Structs.Count > 0)
         {
-            sb.Append(GenerateStructs(package.Structs.Where(s => s.IsInterface), indentLvl, package.Conditions));
+            sb.Append(GenerateStructs(package.Structs.Where(s => s.IsInterface), indentLvl));
         }
 
         // File footer
@@ -298,7 +297,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return sb.ToString();
     }
 
-    public string GetDelegateString(CSharpDelegate @delegate, int baseIndentLvl, List<string> modelConditions)
+    public string GetDelegateString(CSharpDelegate @delegate, int baseIndentLvl)
     {
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(@delegate, baseIndentLvl));
@@ -309,7 +308,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         // Attributes
         if (@delegate.Attributes.Count > 0)
         {
-            sb.Append(GenerateAttributes(@delegate.Attributes, baseIndentLvl, modelConditions));
+            sb.Append(GenerateAttributes(@delegate.Attributes, baseIndentLvl));
             sb.Append(Options.GetNewLineText());
         }
 
@@ -342,12 +341,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
 
         // Params
         sb.Append('(');
-        sb.Append(
-            string.Join(
-                ", ",
-                @delegate.Params.Where(p => ResolveConditions(modelConditions, p.Conditions)).Select(GetParamString)
-            )
-        );
+        sb.Append(string.Join(", ", @delegate.Params.Select(GetParamString)));
         sb.Append(");");
 
         // Inline comment
@@ -370,7 +364,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         // Attributes
         if (parameter.Attributes.Count > 0)
         {
-            sb.Append(GenerateAttributes(parameter.Attributes, 0, parameter.Conditions));
+            sb.Append(GenerateAttributes(parameter.Attributes, 0));
             sb.Append(' ');
         }
 
@@ -393,18 +387,18 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return sb.ToString();
     }
 
-    public string GetEventString(CSharpEvent @event, int baseIndentLvl, List<string> conditions)
+    public string GetEventString(CSharpEvent @event, int baseIndentLvl)
     {
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(@event, baseIndentLvl));
 
         // Comment
-        sb.Append(GetMultiCommentString(@event.Comments, baseIndentLvl, false));
+        sb.Append(GetMultiCommentString(@event.Comments, baseIndentLvl, finalizeReturn: false));
 
         // Attributes
         if (@event.Attributes.Count > 0)
         {
-            sb.Append(GenerateAttributes(@event.Attributes, baseIndentLvl, conditions));
+            sb.Append(GenerateAttributes(@event.Attributes, baseIndentLvl));
             sb.Append(Options.GetNewLineText());
         }
 
@@ -454,18 +448,18 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return sb.ToString();
     }
 
-    public string GetFieldString(CSharpField field, int baseIndentLvl, List<string> conditions)
+    public string GetFieldString(CSharpField field, int baseIndentLvl)
     {
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(field, baseIndentLvl));
 
         // Comment
-        sb.Append(GetMultiCommentString(field.Comments, baseIndentLvl, false));
+        sb.Append(GetMultiCommentString(field.Comments, baseIndentLvl, finalizeReturn: false));
 
         // Attributes
         if (field.Attributes.Count > 0)
         {
-            sb.Append(GenerateAttributes(field.Attributes, baseIndentLvl, conditions));
+            sb.Append(GenerateAttributes(field.Attributes, baseIndentLvl));
             sb.Append(Options.GetNewLineText());
         }
 
@@ -538,18 +532,18 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return sb.ToString();
     }
 
-    public string GetPropertyString(CSharpProperty property, int baseIndentLvl, List<string> conditions)
+    public string GetPropertyString(CSharpProperty property, int baseIndentLvl)
     {
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(property, baseIndentLvl));
 
         // Comment
-        sb.Append(GetMultiCommentString(property.Comments, baseIndentLvl, false));
+        sb.Append(GetMultiCommentString(property.Comments, baseIndentLvl, finalizeReturn: false));
 
         // Attributes
         if (property.Attributes.Count > 0)
         {
-            sb.Append(GenerateAttributes(property.Attributes, baseIndentLvl, conditions));
+            sb.Append(GenerateAttributes(property.Attributes, baseIndentLvl));
             sb.Append(Options.GetNewLineText());
         }
 
@@ -698,12 +692,12 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         sb.Append(GetBeforePrint(@enum, baseIndentLvl));
 
         // Comment
-        sb.Append(GetMultiCommentString(@enum.Comments, baseIndentLvl, false));
+        sb.Append(GetMultiCommentString(@enum.Comments, baseIndentLvl, finalizeReturn: false));
 
         // Attributes
         if (@enum.Attributes.Count > 0)
         {
-            sb.Append(GenerateAttributes(@enum.Attributes, baseIndentLvl, @enum.Conditions));
+            sb.Append(GenerateAttributes(@enum.Attributes, baseIndentLvl));
             sb.Append(Options.GetNewLineText());
         }
 
@@ -740,7 +734,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         // Values
         if (@enum.Values.Count > 0)
         {
-            int biggestName = @enum.Values.Max(ev => ev.Name.Length);
+            int biggestName = @enum.Values.Max(ev => ev.Key.Length);
             IEnumerable<string> vals = @enum.Values.Select(
                 ev =>
                 {
@@ -751,7 +745,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
                             ? $"0x{iValue:X16}"
                             : ev.Value;
 
-                    return $"{ev.Name.PadRight(biggestName)} = {value}";
+                    return $"{ev.Key.PadRight(biggestName)} = {value}";
                 }
             );
 
@@ -770,18 +764,18 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return sb.ToString();
     }
 
-    public string GetFunctionString(CSharpFunction func, int baseIndentLvl, List<string> modelConditions)
+    public string GetFunctionString(CSharpFunction func, int baseIndentLvl)
     {
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(func, baseIndentLvl));
 
         // Comment
-        sb.Append(GetMultiCommentString(func.Comments, baseIndentLvl, false));
+        sb.Append(GetMultiCommentString(func.Comments, baseIndentLvl, finalizeReturn: false));
 
         // Attributes
         if (func.Attributes.Count > 0)
         {
-            sb.Append(GenerateAttributes(func.Attributes, baseIndentLvl, modelConditions));
+            sb.Append(GenerateAttributes(func.Attributes, baseIndentLvl));
             sb.Append(Options.GetNewLineText());
         }
 
@@ -853,12 +847,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
 
         // Params
         sb.Append('(');
-        sb.Append(
-            string.Join(
-                ", ",
-                func.Params.Where(p => ResolveConditions(modelConditions, p.Conditions)).Select(GetParamString)
-            )
-        );
+        sb.Append(string.Join(", ", func.Params.Select(GetParamString)));
         sb.Append(')');
 
         // Inline comment
@@ -882,18 +871,18 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return sb.ToString();
     }
 
-    public string GetStructString(CSharpStruct @struct, int baseIndentLvl, List<string> conditions)
+    public string GetStructString(CSharpStruct @struct, int baseIndentLvl)
     {
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(@struct, baseIndentLvl));
 
         // Comment
-        sb.Append(GetMultiCommentString(@struct.Comments, baseIndentLvl, false));
+        sb.Append(GetMultiCommentString(@struct.Comments, baseIndentLvl, finalizeReturn: false));
 
         // Attributes
         if (@struct.Attributes.Count > 0)
         {
-            sb.Append(GenerateAttributes(@struct.Attributes, baseIndentLvl, conditions));
+            sb.Append(GenerateAttributes(@struct.Attributes, baseIndentLvl));
             sb.Append(Options.GetNewLineText());
         }
 
@@ -995,31 +984,31 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         // Delegates
         if (@struct.Delegates.Count > 0)
         {
-            sb.Append(GenerateDelegates(@struct.Delegates, baseIndentLvl, conditions));
+            sb.Append(GenerateDelegates(@struct.Delegates, baseIndentLvl));
         }
 
         // Events
         if (@struct.Events.Count > 0)
         {
-            sb.Append(GenerateEvents(@struct.Events, baseIndentLvl, conditions));
+            sb.Append(GenerateEvents(@struct.Events, baseIndentLvl));
         }
 
         // Fields
         if (@struct.Fields.Count > 0)
         {
-            sb.Append(GenerateFields(@struct.Fields, baseIndentLvl, conditions));
+            sb.Append(GenerateFields(@struct.Fields, baseIndentLvl));
         }
 
         // Properties
         if (@struct.Properties.Count > 0)
         {
-            sb.Append(GenerateProperties(@struct.Properties, baseIndentLvl, conditions));
+            sb.Append(GenerateProperties(@struct.Properties, baseIndentLvl));
         }
 
         // Methods
         if (@struct.Methods.Count > 0)
         {
-            sb.Append(GenerateFunctions(@struct.Methods, baseIndentLvl, conditions));
+            sb.Append(GenerateFunctions(@struct.Methods, baseIndentLvl));
         }
 
         // Close struct scope
@@ -1041,15 +1030,9 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateAttributes(
-        IEnumerable<CSharpAttribute> attributes,
-        int baseIndentLvl,
-        List<string> conditions
-    )
+    public string GenerateAttributes(IEnumerable<CSharpAttribute> attributes, int baseIndentLvl)
     {
-        List<CSharpAttribute> attribute = attributes
-            .Where(v => !string.IsNullOrWhiteSpace(v.Name) && ResolveConditions(conditions, v.Conditions))
-            .ToList();
+        List<CSharpAttribute> attribute = attributes.Where(v => !string.IsNullOrWhiteSpace(v.Name)).ToList();
 
         if (attribute.Count == 0)
         {
@@ -1061,12 +1044,10 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return ret;
     }
 
-    public string GenerateDelegates(IEnumerable<CSharpDelegate> delegates, int baseIndentLvl, List<string> conditions)
+    public string GenerateDelegates(IEnumerable<CSharpDelegate> delegates, int baseIndentLvl)
     {
         List<CSharpDelegate> dels = delegates.Where(
-                f => !string.IsNullOrWhiteSpace(f.Name) &&
-                     !string.IsNullOrWhiteSpace(f.Type) &&
-                     ResolveConditions(conditions, f.Conditions)
+                f => !string.IsNullOrWhiteSpace(f.Name) && !string.IsNullOrWhiteSpace(f.Type)
             )
             .ToList();
 
@@ -1075,10 +1056,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
             return string.Empty;
         }
 
-        string ret = string.Join(
-            Options.GetNewLineText(),
-            dels.Select(f => GetDelegateString(f, baseIndentLvl, conditions))
-        );
+        string ret = string.Join(Options.GetNewLineText(), dels.Select(f => GetDelegateString(f, baseIndentLvl)));
 
         if (Options.PrintSectionName)
         {
@@ -1088,12 +1066,10 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateEvents(IEnumerable<CSharpEvent> events, int baseIndentLvl, List<string> conditions)
+    public string GenerateEvents(IEnumerable<CSharpEvent> events, int baseIndentLvl)
     {
         List<CSharpEvent> evs = events.Where(
-                f => !string.IsNullOrWhiteSpace(f.Name) &&
-                     !string.IsNullOrWhiteSpace(f.Type) &&
-                     ResolveConditions(conditions, f.Conditions)
+                f => !string.IsNullOrWhiteSpace(f.Name) && !string.IsNullOrWhiteSpace(f.Type)
             )
             .ToList();
 
@@ -1102,11 +1078,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
             return string.Empty;
         }
 
-        string ret = string.Join(
-            Options.GetNewLineText(),
-            evs.Select(f => GetEventString(f, baseIndentLvl, conditions))
-        );
-
+        string ret = string.Join(Options.GetNewLineText(), evs.Select(f => GetEventString(f, baseIndentLvl)));
         if (Options.PrintSectionName)
         {
             ret = GetSectionHeading("Events", baseIndentLvl) + ret;
@@ -1115,12 +1087,10 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateFields(IEnumerable<CSharpField> fields, int baseIndentLvl, List<string> conditions)
+    public string GenerateFields(IEnumerable<CSharpField> fields, int baseIndentLvl)
     {
         List<CSharpField> vars = fields.Where(
-                v => !string.IsNullOrWhiteSpace(v.Name) &&
-                     !string.IsNullOrWhiteSpace(v.Type) &&
-                     ResolveConditions(conditions, v.Conditions)
+                v => !string.IsNullOrWhiteSpace(v.Name) && !string.IsNullOrWhiteSpace(v.Type)
             )
             .ToList();
 
@@ -1129,10 +1099,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
             return string.Empty;
         }
 
-        string ret = string.Join(
-            Options.GetNewLineText(),
-            vars.Select(v => GetFieldString(v, baseIndentLvl, conditions))
-        );
+        string ret = string.Join(Options.GetNewLineText(), vars.Select(v => GetFieldString(v, baseIndentLvl)));
 
         if (Options.PrintSectionName)
         {
@@ -1142,12 +1109,10 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateProperties(IEnumerable<CSharpProperty> properties, int baseIndentLvl, List<string> conditions)
+    public string GenerateProperties(IEnumerable<CSharpProperty> properties, int baseIndentLvl)
     {
         List<CSharpProperty> props = properties.Where(
-                v => !string.IsNullOrWhiteSpace(v.Name) &&
-                     !string.IsNullOrWhiteSpace(v.Type) &&
-                     ResolveConditions(conditions, v.Conditions)
+                v => !string.IsNullOrWhiteSpace(v.Name) && !string.IsNullOrWhiteSpace(v.Type)
             )
             .ToList();
 
@@ -1156,10 +1121,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
             return string.Empty;
         }
 
-        string ret = string.Join(
-            Options.GetNewLineText(),
-            props.Select(p => GetPropertyString(p, baseIndentLvl, conditions))
-        );
+        string ret = string.Join(Options.GetNewLineText(), props.Select(p => GetPropertyString(p, baseIndentLvl)));
 
         if (Options.PrintSectionName)
         {
@@ -1169,12 +1131,10 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateFunctions(IEnumerable<CSharpFunction> functions, int baseIndentLvl, List<string> conditions)
+    public string GenerateFunctions(IEnumerable<CSharpFunction> functions, int baseIndentLvl)
     {
         List<CSharpFunction> funcs = functions.Where(
-                f => !string.IsNullOrWhiteSpace(f.Name) &&
-                     !string.IsNullOrWhiteSpace(f.Type) &&
-                     ResolveConditions(conditions, f.Conditions)
+                f => !string.IsNullOrWhiteSpace(f.Name) && !string.IsNullOrWhiteSpace(f.Type)
             )
             .ToList();
 
@@ -1183,10 +1143,7 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
             return string.Empty;
         }
 
-        string ret = string.Join(
-            Options.GetNewLineText(),
-            funcs.Select(f => GetFunctionString(f, baseIndentLvl, conditions))
-        );
+        string ret = string.Join(Options.GetNewLineText(), funcs.Select(f => GetFunctionString(f, baseIndentLvl)));
 
         if (Options.PrintSectionName)
         {
@@ -1196,11 +1153,9 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateEnums(IEnumerable<CSharpEnum> enums, int baseIndentLvl, List<string> conditions)
+    public string GenerateEnums(IEnumerable<CSharpEnum> enums, int baseIndentLvl)
     {
-        List<CSharpEnum> vEnums = enums
-            .Where(e => !string.IsNullOrWhiteSpace(e.Name) && ResolveConditions(conditions, e.Conditions))
-            .ToList();
+        List<CSharpEnum> vEnums = enums.Where(e => !string.IsNullOrWhiteSpace(e.Name)).ToList();
 
         if (vEnums.Count == 0)
         {
@@ -1217,39 +1172,27 @@ public sealed class CSharpProcessor : LangProcessor<CSharpLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateStructs(IEnumerable<CSharpStruct> structs, int baseIndentLvl, List<string> conditions)
+    public string GenerateStructs(IEnumerable<CSharpStruct> structs, int baseIndentLvl)
     {
-        List<CSharpStruct> vStruct = structs
-            .Where(s => !string.IsNullOrWhiteSpace(s.Name) && ResolveConditions(conditions, s.Conditions))
-            .ToList();
+        List<CSharpStruct> vStruct = structs.Where(s => !string.IsNullOrWhiteSpace(s.Name)).ToList();
 
         if (vStruct.Count == 0)
         {
             return string.Empty;
         }
 
-        string ret = string.Join(
-            Options.GetNewLineText(),
-            vStruct.Select(s => GetStructString(s, baseIndentLvl, conditions))
-        );
+        string ret = string.Join(Options.GetNewLineText(), vStruct.Select(s => GetStructString(s, baseIndentLvl)));
 
         if (Options.PrintSectionName)
         {
-            ret = GetSectionHeading(vStruct.All(s => s.IsClass) ? "Classes" : "Structs", baseIndentLvl) + ret;
+            ret = GetSectionHeading(vStruct.TrueForAll(s => s.IsClass) ? "Classes" : "Structs", baseIndentLvl) + ret;
         }
 
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public CSharpPackage? ModelFromJson(string jsonData)
-    {
-        return JsonConvert.DeserializeObject<CSharpPackage>(jsonData);
-    }
-
     public Dictionary<string, string> GenerateFiles(CSharpPackage cSharpPackage)
     {
-        cSharpPackage.Conditions = cSharpPackage.Conditions.Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
-
         var ret = new Dictionary<string, string>(StringComparer.Ordinal);
 
         if (!Options.GeneratePackageSyntax)

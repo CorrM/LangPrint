@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.Linq;
 using LangPrint.Utils;
-using Newtonsoft.Json;
 
 namespace LangPrint.Cpp;
+
+// TODO: Remove json dependency, let user get the data the way they want
+// TODO: Remove conditions concept
 
 public sealed class CppProcessor : LangProcessor<CppLangOptions>
 {
@@ -37,19 +39,19 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         sb.Append(GenerateForwards(package.Forwards, indentLvl));
 
         // Constants
-        sb.Append(GenerateConstants(package.Constants, indentLvl, package.Conditions));
+        sb.Append(GenerateConstants(package.Constants, indentLvl));
 
         // Global fields
-        sb.Append(GenerateFields(package.Fields, true, indentLvl, package.Conditions));
+        sb.Append(GenerateFields(package.Fields, declarationOnly: true, indentLvl));
 
         // Global functions
-        sb.Append(GenerateFunctions(package.Functions, null, true, indentLvl, package.Conditions));
+        sb.Append(GenerateFunctions(package.Functions, parent: null, declarationOnly: true, indentLvl));
 
         // Enums
-        sb.Append(GenerateEnums(package.Enums, indentLvl, package.Conditions));
+        sb.Append(GenerateEnums(package.Enums, indentLvl));
 
         // Structs
-        sb.Append(GenerateStructs(package.Structs, indentLvl, package.Conditions));
+        sb.Append(GenerateStructs(package.Structs, indentLvl));
 
         // File footer
         sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
@@ -60,10 +62,6 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
     private string MakeCppFile(CppPackage package)
     {
         var sb = new LangStringWriter(Options);
-
-        List<CppStruct> validStructs = package.Structs
-            .Where(s => ResolveConditions(package.Conditions, s.Conditions))
-            .ToList();
 
         // File header
         List<string> includes = package.CppIncludes;
@@ -78,27 +76,26 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
             GetFileHeader(
                 package.HeadingComment,
                 package.NameSpace,
-                null,
+                pragmas: null,
                 includes,
-                null,
-                null,
+                defines: null,
+                typeDefs: null,
                 package.CppBeforeNameSpace,
                 out int indentLvl
             )
         );
 
         // Static fields
-        IEnumerable<CppField> staticVars = validStructs.SelectMany(s => s.Fields)
-            .Where(v => ResolveConditions(package.Conditions, v.Conditions));
+        IEnumerable<CppField> staticVars = package.Structs.SelectMany(s => s.Fields);
 
-        if (staticVars.Any(v => v.Static))
+        if (staticVars.Any(v => v.IsStatic))
         {
             var varsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs Static Fields", indentLvl));
 
-            foreach (CppStruct @struct in validStructs)
+            foreach (CppStruct @struct in package.Structs)
             {
-                List<string> variables = @struct.Fields.Where(v => v.Static && !v.Constexpr)
+                List<string> variables = @struct.Fields.Where(v => v.IsStatic && !v.IsConstexpr)
                     .Select(v => GetFieldString(v, false, indentLvl, @struct))
                     .ToList();
 
@@ -110,34 +107,32 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         }
 
         // Global fields
-        sb.Append(GenerateFields(package.Fields, false, indentLvl, package.Conditions));
+        sb.Append(GenerateFields(package.Fields, declarationOnly: false, indentLvl));
 
         // Global functions
         sb.Append(
             GenerateFunctions(
-                package.Functions.Where(f => f.TemplateParams.Count == 0),
-                null,
-                false,
-                indentLvl,
-                package.Conditions
+                package.Functions.Where(f => f.TemplateParameters.Count == 0),
+                parent: null,
+                declarationOnly: false,
+                indentLvl
             )
         );
 
         // Structs functions
-        if (validStructs.Any(s => s.Methods.Count > 0 && s.TemplateParams.Count == 0))
+        if (package.Structs.Exists(s => s.Methods.Count > 0 && s.TemplateParams.Count == 0))
         {
             var methodsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs functions", indentLvl));
 
-            foreach (CppStruct @struct in validStructs.Where(s => s.TemplateParams.Count == 0))
+            foreach (CppStruct @struct in package.Structs.Where(s => s.TemplateParams.Count == 0))
             {
                 int lvl = indentLvl;
                 IEnumerable<string> methodsToAdd = @struct.Methods
                     .Where(
-                        m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(package.Conditions, m.Conditions)
+                        m => !string.IsNullOrWhiteSpace(m.Name) && m is { IsFriend: false, TemplateParameters.Count: 0 }
                     )
-                    .Where(m => !m.Friend && m.TemplateParams.Count == 0)
-                    .Select(structMethod => GetFunctionString(structMethod, @struct, false, lvl, package.Conditions));
+                    .Select(structMethod => GetFunctionString(structMethod, @struct, declaration: false, lvl));
                 methodsStr.AddRange(methodsToAdd);
             }
 
@@ -172,13 +167,13 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         );
 
         // Constants
-        sb.Append(GenerateConstants(package.Constants, indentLvl, package.Conditions));
+        sb.Append(GenerateConstants(package.Constants, indentLvl));
 
         // Enums
-        sb.Append(GenerateEnums(package.Enums, indentLvl, package.Conditions));
+        sb.Append(GenerateEnums(package.Enums, indentLvl));
 
         // Structs
-        sb.Append(GenerateStructs(package.Structs.Where(s => !s.IsClass), indentLvl, package.Conditions));
+        sb.Append(GenerateStructs(package.Structs.Where(s => !s.IsClass), indentLvl));
 
         // File footer
         sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
@@ -207,7 +202,7 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         );
 
         // Structs
-        sb.Append(GenerateStructs(package.Structs.Where(s => s.IsClass), indentLvl, package.Conditions));
+        sb.Append(GenerateStructs(package.Structs.Where(s => s.IsClass), indentLvl));
 
         // File footer
         sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
@@ -237,13 +232,13 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         sb.Append(GenerateForwards(package.Forwards, indentLvl));
 
         // Constants
-        sb.Append(GenerateConstants(package.Constants, indentLvl, package.Conditions));
+        sb.Append(GenerateConstants(package.Constants, indentLvl));
 
         // Global fields
-        sb.Append(GenerateFields(package.Fields, true, indentLvl, package.Conditions));
+        sb.Append(GenerateFields(package.Fields, declarationOnly: true, indentLvl));
 
         // Global functions
-        sb.Append(GenerateFunctions(package.Functions, null, true, indentLvl, package.Conditions));
+        sb.Append(GenerateFunctions(package.Functions, parent: null, declarationOnly: true, indentLvl));
 
         // File footer
         sb.Append(GetFileFooter(package.NameSpace, package.AfterNameSpace, ref indentLvl));
@@ -265,10 +260,6 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
     private string MakePackageCppFile(CppPackage package)
     {
         var sb = new LangStringWriter(Options);
-
-        List<CppStruct> validStructs = package.Structs
-            .Where(s => ResolveConditions(package.Conditions, s.Conditions))
-            .ToList();
 
         // File header
         List<string> includes = package.CppIncludes;
@@ -293,19 +284,17 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         );
 
         // Static fields
-        IEnumerable<CppField> staticVars = validStructs.SelectMany(s => s.Fields)
-            .Where(v => ResolveConditions(package.Conditions, v.Conditions));
+        IEnumerable<CppField> staticVars = package.Structs.SelectMany(s => s.Fields);
 
-        if (staticVars.Any(v => v.Static))
+        if (staticVars.Any(v => v.IsStatic))
         {
             var varsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs Static Fields", indentLvl));
 
-            foreach (CppStruct @struct in validStructs)
+            foreach (CppStruct @struct in package.Structs)
             {
-                List<string> variables = @struct.Fields.Where(v => ResolveConditions(package.Conditions, v.Conditions))
-                    .Where(v => v.Static && !v.Constexpr)
-                    .Select(v => GetFieldString(v, false, indentLvl, @struct))
+                List<string> variables = @struct.Fields.Where(v => v is { IsStatic: true, IsConstexpr: false })
+                    .Select(v => GetFieldString(v, declaration: false, indentLvl, @struct))
                     .ToList();
 
                 varsStr.AddRange(variables);
@@ -316,34 +305,32 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         }
 
         // Global fields
-        sb.Append(GenerateFields(package.Fields, false, indentLvl, package.Conditions));
+        sb.Append(GenerateFields(package.Fields, declarationOnly: false, indentLvl));
 
         // Global functions
         sb.Append(
             GenerateFunctions(
-                package.Functions.Where(f => f.TemplateParams.Count == 0),
-                null,
-                false,
-                indentLvl,
-                package.Conditions
+                package.Functions.Where(f => f.TemplateParameters.Count == 0),
+                parent: null,
+                declarationOnly: false,
+                indentLvl
             )
         );
 
         // Structs functions
-        if (validStructs.Any(s => s.Methods.Count > 0 && s.TemplateParams.Count == 0))
+        if (package.Structs.Exists(s => s.Methods.Count > 0 && s.TemplateParams.Count == 0))
         {
             var methodsStr = new List<string>();
             sb.Append(GetSectionHeading("Structs Functions", indentLvl));
 
-            foreach (CppStruct @struct in validStructs.Where(s => s.TemplateParams.Count == 0))
+            foreach (CppStruct @struct in package.Structs.Where(s => s.TemplateParams.Count == 0))
             {
                 int lvl = indentLvl;
                 IEnumerable<string> methodsToAdd = @struct.Methods
                     .Where(
-                        m => !string.IsNullOrWhiteSpace(m.Name) && ResolveConditions(package.Conditions, m.Conditions)
+                        m => !string.IsNullOrWhiteSpace(m.Name) && m is { IsFriend: false, TemplateParameters.Count: 0 }
                     )
-                    .Where(m => !m.Friend && m.TemplateParams.Count == 0)
-                    .Select(structMethod => GetFunctionString(structMethod, @struct, false, lvl, package.Conditions));
+                    .Select(structMethod => GetFunctionString(structMethod, @struct, declaration: false, lvl));
                 methodsStr.AddRange(methodsToAdd);
             }
 
@@ -359,12 +346,12 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
 
     public string GetFileHeader(
         IEnumerable<string>? headingComment,
-        string nameSpace,
+        string? nameSpace,
         List<string>? pragmas,
         List<string>? includes,
         List<CppDefine>? defines,
         List<string>? typeDefs,
-        string beforeNameSpace,
+        string? beforeNameSpace,
         out int indentLvl
     )
     {
@@ -416,7 +403,7 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         return sb.ToString();
     }
 
-    public string GetFileFooter(string nameSpace, string afterNameSpace, ref int indentLvl)
+    public string GetFileFooter(string? nameSpace, string? afterNameSpace, ref int indentLvl)
     {
         var sb = new LangStringWriter(Options);
 
@@ -506,31 +493,31 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         var decSb = new LangStringWriter(Options);
 
         // Extern
-        if (declaration && field.Extern)
+        if (declaration && field.IsExtern)
         {
             decSb.Append("extern ");
         }
 
         // Static
-        if (declaration && field.Static)
+        if (declaration && field.IsStatic)
         {
             decSb.Append("static ");
         }
 
         // Friend
-        if (declaration && field.Friend)
+        if (declaration && field.IsFriend)
         {
             decSb.Append("friend ");
         }
 
         // Const
-        if (field.Const)
+        if (field.IsConst)
         {
             decSb.Append("const ");
         }
 
         // Constexpr
-        if (declaration && field.Constexpr)
+        if (declaration && field.IsConstexpr)
         {
             decSb.Append("constexpr ");
         }
@@ -563,9 +550,9 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         }
 
         // Value
-        if ((!string.IsNullOrWhiteSpace(field.Value) && !declaration) || (declaration && field.Constexpr))
+        if ((!string.IsNullOrWhiteSpace(field.DefaultValue) && !declaration) || (declaration && field.IsConstexpr))
         {
-            nameSb.Append($" = {field.Value}");
+            nameSb.Append($" = {field.DefaultValue}");
         }
 
         nameSb.Append(';');
@@ -601,9 +588,9 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         );
 
         // Type
-        if (!string.IsNullOrWhiteSpace(@enum.Type))
+        if (!string.IsNullOrWhiteSpace(@enum.UnderlyingType))
         {
-            sb.Append($" : {@enum.Type}");
+            sb.Append($" : {@enum.UnderlyingType}");
         }
 
         // Inline comment
@@ -619,17 +606,17 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         baseIndentLvl++;
 
         // Values
-        if (@enum.Values.Count > 0)
+        if (@enum.Items.Count > 0)
         {
-            int biggestName = @enum.Values.Max(ev => ev.Name.Length);
-            IEnumerable<string> vals = @enum.Values.Select(
+            int biggestName = @enum.Items.Max(ev => ev.Key.Length);
+            IEnumerable<string> vals = @enum.Items.Select(
                 ev =>
                 {
-                    string value = @enum.HexValues && long.TryParse(ev.Value, out long iValue) && iValue >= 0
+                    string value = @enum.UseHexValues && long.TryParse(ev.Value, out long iValue) && iValue >= 0
                         ? $"0x{iValue:X16}"
                         : ev.Value;
 
-                    return $"{ev.Name.PadRight(biggestName)} = {value}";
+                    return $"{ev.Key.PadRight(biggestName)} = {value}";
                 }
             );
 
@@ -648,18 +635,12 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         return sb.ToString();
     }
 
-    public string GetFunctionString(
-        CppFunction func,
-        CppStruct? parent,
-        bool declaration,
-        int baseIndentLvl,
-        List<string>? modelConditions
-    )
+    public string GetFunctionString(CppFunction func, CppStruct? parent, bool declaration, int baseIndentLvl)
     {
         bool forceAddBody = declaration;
         forceAddBody &= (parent is not null && parent.TemplateParams.Count > 0) ||
-                        func.TemplateParams.Count > 0 ||
-                        func.Friend;
+                        func.TemplateParameters.Count > 0 ||
+                        func.IsFriend;
 
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(func, baseIndentLvl));
@@ -671,29 +652,29 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         }
 
         // Template
-        if (func.TemplateParams.Count > 0)
+        if (func.TemplateParameters.Count > 0)
         {
             sb.Append(Helper.GetIndent(baseIndentLvl));
-            sb.Append($"template<{string.Join(", ", func.TemplateParams)}>");
+            sb.Append($"template<{string.Join(", ", func.TemplateParameters)}>");
             sb.Append(Options.GetNewLineText());
         }
 
         sb.Append(Helper.GetIndent(baseIndentLvl));
 
         // Static
-        if (declaration && func.Static)
+        if (declaration && func.IsStatic)
         {
             sb.Append("static ");
         }
 
         // Friend
-        if (declaration && func.Friend)
+        if (declaration && func.IsFriend)
         {
             sb.Append("friend ");
         }
 
         // Inline
-        if (func.Inline && declaration)
+        if (func.IsInline && declaration)
         {
             sb.Append("inline ");
         }
@@ -708,8 +689,8 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         if (parent is not null &&
             parent.TemplateParams.Count == 0 &&
             !declaration &&
-            func.TemplateParams.Count == 0 &&
-            !func.Friend)
+            func.TemplateParameters.Count == 0 &&
+            !func.IsFriend)
         {
             sb.Append($"{parent.Name}::");
         }
@@ -718,17 +699,11 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
 
         // Params
         sb.Append('(');
-        sb.Append(
-            string.Join(
-                ", ",
-                func.Params.Where(p => modelConditions is null || ResolveConditions(modelConditions, p.Conditions))
-                    .Select(GetParamString)
-            )
-        );
+        sb.Append(string.Join(", ", func.Parameters.Select(GetParamString)));
         sb.Append(')');
 
         // Const
-        if (func.Const)
+        if (func.IsConst)
         {
             sb.Append(" const");
         }
@@ -763,7 +738,7 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         return sb.ToString();
     }
 
-    public string GetStructString(CppStruct @struct, int baseIndentLvl, List<string>? conditions)
+    public string GetStructString(CppStruct @struct, int baseIndentLvl)
     {
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(@struct, baseIndentLvl));
@@ -833,31 +808,27 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
 
             bool lastVarIsPrivate = false;
             bool lastVarIsUnion = false;
-            List<CppField> variables = @struct.Fields.Where(
-                    v => !string.IsNullOrWhiteSpace(v.Name) &&
-                         (conditions is null || ResolveConditions(conditions, v.Conditions))
-                )
-                .ToList();
+            List<CppField> variables = @struct.Fields.Where(v => !string.IsNullOrWhiteSpace(v.Name)).ToList();
 
             // Force write "private" or "public"
             if (variables.Count > 0)
             {
-                lastVarIsPrivate = !variables.First().Private;
+                lastVarIsPrivate = !variables[0].IsPrivate;
             }
 
             foreach (CppField structVar in variables)
             {
                 // Private or Public
-                if (structVar.Private != lastVarIsPrivate)
+                if (structVar.IsPrivate != lastVarIsPrivate)
                 {
-                    lastVarIsPrivate = structVar.Private;
+                    lastVarIsPrivate = structVar.IsPrivate;
                     sb.Append($"{Helper.GetIndent(baseIndentLvl - 1)}");
-                    sb.Append(structVar.Private ? "private:" : "public:");
+                    sb.Append(structVar.IsPrivate ? "private:" : "public:");
                     sb.Append(Options.GetNewLineText());
                 }
 
                 // Close union
-                if ((structVar.ForceUnion && lastVarIsUnion) || (!structVar.Union && lastVarIsUnion))
+                if ((structVar.ForceUnion && lastVarIsUnion) || (!structVar.IsUnion && lastVarIsUnion))
                 {
                     lastVarIsUnion = false;
                     baseIndentLvl--;
@@ -865,7 +836,7 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
                 }
 
                 // Open union
-                if (structVar.Union && !lastVarIsUnion)
+                if (structVar.IsUnion && !lastVarIsUnion)
                 {
                     lastVarIsUnion = true;
                     sb.Append($"{Helper.GetIndent(baseIndentLvl)}union{Options.GetNewLineText()}");
@@ -908,31 +879,27 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
             sb.Append(Options.GetNewLineText());
 
             bool lastMethodIsPrivate = false;
-            List<CppFunction> methods = @struct.Methods.Where(
-                    m => !string.IsNullOrWhiteSpace(m.Name) &&
-                         (conditions is null || ResolveConditions(conditions, m.Conditions))
-                )
-                .ToList();
+            List<CppFunction> methods = @struct.Methods.Where(m => !string.IsNullOrWhiteSpace(m.Name)).ToList();
 
             // Force write "private" or "public"
             if (methods.Count > 0)
             {
-                lastMethodIsPrivate = !methods.First().Private;
+                lastMethodIsPrivate = !methods[0].IsPrivate;
             }
 
             foreach (CppFunction structMethod in methods)
             {
                 // Private or Public
-                if (structMethod.Private != lastMethodIsPrivate)
+                if (structMethod.IsPrivate != lastMethodIsPrivate)
                 {
-                    lastMethodIsPrivate = structMethod.Private;
+                    lastMethodIsPrivate = structMethod.IsPrivate;
                     sb.Append($"{Helper.GetIndent(baseIndentLvl - 1)}");
-                    sb.Append(structMethod.Private ? "private:" : "public:");
+                    sb.Append(structMethod.IsPrivate ? "private:" : "public:");
                     sb.Append(Options.GetNewLineText());
                 }
 
                 // Print method
-                sb.Append(GetFunctionString(structMethod, @struct, true, baseIndentLvl, conditions));
+                sb.Append(GetFunctionString(structMethod, @struct, declaration: true, baseIndentLvl));
             }
         }
 
@@ -1002,17 +969,10 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateFields(
-        IEnumerable<CppField> fields,
-        bool declarationOnly,
-        int baseIndentLvl,
-        List<string> conditions
-    )
+    public string GenerateFields(IEnumerable<CppField> fields, bool declarationOnly, int baseIndentLvl)
     {
         List<CppField> vars = fields.Where(
-                v => !string.IsNullOrWhiteSpace(v.Name) &&
-                     !string.IsNullOrWhiteSpace(v.Type) &&
-                     ResolveConditions(conditions, v.Conditions)
+                v => !string.IsNullOrWhiteSpace(v.Name) && !string.IsNullOrWhiteSpace(v.Type)
             )
             .ToList();
 
@@ -1038,14 +998,11 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         IEnumerable<CppFunction> functions,
         CppStruct? parent,
         bool declarationOnly,
-        int baseIndentLvl,
-        List<string> conditions
+        int baseIndentLvl
     )
     {
         List<CppFunction> funcs = functions.Where(
-                f => !string.IsNullOrWhiteSpace(f.Name) &&
-                     !string.IsNullOrWhiteSpace(f.Type) &&
-                     ResolveConditions(conditions, f.Conditions)
+                f => !string.IsNullOrWhiteSpace(f.Name) && !string.IsNullOrWhiteSpace(f.Type)
             )
             .ToList();
 
@@ -1056,7 +1013,7 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
 
         string ret = string.Join(
             Options.GetNewLineText(),
-            funcs.Select(f => GetFunctionString(f, parent, declarationOnly, baseIndentLvl, conditions))
+            funcs.Select(f => GetFunctionString(f, parent, declarationOnly, baseIndentLvl))
         );
 
         if (Options.PrintSectionName)
@@ -1067,11 +1024,9 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateEnums(IEnumerable<CppEnum> enums, int baseIndentLvl, List<string> conditions)
+    public string GenerateEnums(IEnumerable<CppEnum> enums, int baseIndentLvl)
     {
-        List<CppEnum> vEnums = enums
-            .Where(e => !string.IsNullOrWhiteSpace(e.Name) && ResolveConditions(conditions, e.Conditions))
-            .ToList();
+        List<CppEnum> vEnums = enums.Where(e => !string.IsNullOrWhiteSpace(e.Name)).ToList();
 
         if (vEnums.Count == 0)
         {
@@ -1088,14 +1043,13 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateConstants(IEnumerable<CppConstant> constants, int baseIndentLvl, List<string> conditions)
+    public string GenerateConstants(IEnumerable<CppConstant> constants, int baseIndentLvl)
     {
         List<string> values = constants
             .Where(
                 c => !string.IsNullOrWhiteSpace(c.Name) &&
                      !string.IsNullOrWhiteSpace(c.Type) &&
-                     !string.IsNullOrWhiteSpace(c.Value) &&
-                     ResolveConditions(conditions, c.Conditions)
+                     !string.IsNullOrWhiteSpace(c.Value)
             )
             .Select(c => $"static constexpr {c.Type} {c.Name} = {c.Value}")
             .ToList();
@@ -1115,41 +1069,27 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public string GenerateStructs(IEnumerable<CppStruct> structs, int baseIndentLvl, List<string>? conditions)
+    public string GenerateStructs(IEnumerable<CppStruct> structs, int baseIndentLvl)
     {
-        List<CppStruct> vStruct = structs.Where(
-                s => !string.IsNullOrWhiteSpace(s.Name) &&
-                     (conditions is null || ResolveConditions(conditions, s.Conditions))
-            )
-            .ToList();
+        List<CppStruct> vStruct = structs.Where(s => !string.IsNullOrWhiteSpace(s.Name)).ToList();
 
         if (vStruct.Count == 0)
         {
             return string.Empty;
         }
 
-        string ret = string.Join(
-            Options.GetNewLineText(),
-            vStruct.Select(s => GetStructString(s, baseIndentLvl, conditions))
-        );
+        string ret = string.Join(Options.GetNewLineText(), vStruct.Select(s => GetStructString(s, baseIndentLvl)));
 
         if (Options.PrintSectionName)
         {
-            ret = GetSectionHeading(vStruct.All(s => s.IsClass) ? "Classes" : "Structs", baseIndentLvl) + ret;
+            ret = GetSectionHeading(vStruct.TrueForAll(s => s.IsClass) ? "Classes" : "Structs", baseIndentLvl) + ret;
         }
 
         return Helper.FinalizeSection(ret, Options.GetNewLineText());
     }
 
-    public CppPackage? ModelFromJson(string jsonData)
-    {
-        return JsonConvert.DeserializeObject<CppPackage>(jsonData);
-    }
-
     public Dictionary<string, string> GenerateFiles(CppPackage cppPackage)
     {
-        cppPackage.Conditions = cppPackage.Conditions.Where(c => !string.IsNullOrWhiteSpace(c)).ToList();
-
         var ret = new Dictionary<string, string>(StringComparer.Ordinal);
 
         if (!Options.GeneratePackageSyntax)

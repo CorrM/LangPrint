@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
-using Newtonsoft.Json;
 
 /*
  * ToDo:
@@ -13,221 +12,167 @@ namespace LangPrint.Cpp;
 [DebuggerDisplay("{" + nameof(Name) + "}" + " {" + nameof(Value) + "}")]
 public class CppDefine : PackageItemBase
 {
-    [JsonProperty("Name")]
     public string Name { get; set; }
-
-    [JsonProperty("Value")]
     public string Value { get; set; }
+
+    public CppDefine(string name, string value)
+    {
+        Name = name;
+        Value = value;
+    }
 }
 
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-public class CppConstant : CppDefine
+public sealed class CppConstant : CppDefine
 {
-    [JsonProperty("Type")]
     public string Type { get; set; }
+
+    public CppConstant(string type, string name, string value) : base(name, value)
+    {
+        Type = type;
+    }
 }
 
-[DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-public class CppEnum : PackageItemBase
+[DebuggerDisplay("{" + nameof(UnderlyingType) + "}" + " {" + nameof(Name) + "}")]
+public sealed class CppEnum : PackageItemBase
 {
-    [JsonProperty("Name")]
     public string Name { get; set; }
-
-    [JsonProperty("Type")]
-    public string Type { get; set; }
-
-    [JsonProperty("IsClass")]
+    public string? UnderlyingType { get; set; }
     public bool IsClass { get; set; }
+    public Dictionary<string, string> Items { get; set; }
+    public bool UseHexValues { get; set; }
 
-    [JsonProperty("Values")]
-    public List<PackageNameValue> Values { get; set; } = new();
-
-    [JsonProperty("HexValues")]
-    public bool HexValues { get; set; }
+    public CppEnum(string name)
+    {
+        Name = name;
+        Items = new Dictionary<string, string>(System.StringComparer.Ordinal);
+    }
 }
 
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-public class CppParameter : PackageItemBase
+public sealed class CppParameter : PackageItemBase
 {
-    [JsonProperty("Type")]
     public string Type { get; set; }
-
-    [JsonProperty("Name")]
     public string Name { get; set; }
+
+    public CppParameter(string type, string name)
+    {
+        Type = type;
+        Name = name;
+    }
 }
 
 // TODO: Add virtual functions
 
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-public class CppFunction : PackageItemBase
+public sealed class CppFunction : PackageItemBase
 {
-    [JsonProperty("Type")]
     public string Type { get; set; }
-
-    [JsonProperty("Name")]
     public string Name { get; set; }
+    public List<string> TemplateParameters { get; set; }
+    public List<CppParameter> Parameters { get; set; }
+    public bool IsPrivate { get; set; }
+    public bool IsStatic { get; set; }
+    public bool IsConst { get; set; }
+    public bool IsFriend { get; set; }
+    public bool IsInline { get; set; }
+    public List<string> Body { get; set; }
 
-    [JsonProperty("TemplateParams")]
-    public List<string> TemplateParams { get; set; } = new();
-
-    [JsonProperty("Params")]
-    public List<CppParameter> Params { get; set; } = new();
-
-    [JsonProperty("Private")]
-    public bool Private { get; set; }
-
-    [JsonProperty("Static")]
-    public bool Static { get; set; }
-
-    [JsonProperty("Const")]
-    public bool Const { get; set; }
-
-    [JsonProperty("Friend")]
-    public bool Friend { get; set; }
-
-    [JsonProperty("Inline")]
-    public bool Inline { get; set; }
-
-    [JsonProperty("Body")]
-    public List<string> Body { get; set; } = new();
+    public CppFunction(string type, string name)
+    {
+        Type = type;
+        Name = name;
+        TemplateParameters = [];
+        Parameters = [];
+        Body = [];
+    }
 }
 
 [DebuggerDisplay("{" + nameof(Type) + "}" + " {" + nameof(Name) + "}")]
-public class CppField : PackageItemBase
+public sealed class CppField : PackageItemBase
 {
-    [JsonProperty("Type")]
     public string Type { get; set; }
-
-    [JsonProperty("Name")]
     public string Name { get; set; }
-
-    [JsonProperty("Value")]
-    public string Value { get; set; }
-
-    [JsonProperty("ArrayDim")]
-    public string ArrayDim { get; set; }
-
-    [JsonProperty("Bitfield")]
-    public string Bitfield { get; set; }
-
-    [JsonProperty("Private")]
-    public bool Private { get; set; }
-
-    [JsonProperty("Extern")]
-    public bool Extern { get; set; }
-
-    [JsonProperty("Static")]
-    public bool Static { get; set; }
-
-    [JsonProperty("Friend")]
-    public bool Friend { get; set; }
-
-    [JsonProperty("Const")]
-    public bool Const { get; set; }
-
-    [JsonProperty("Constexpr")]
-    public bool Constexpr { get; set; }
-
-    [JsonProperty("Union")]
-    public bool Union { get; set; }
-
-    [JsonProperty("ForceUnion")]
+    public string? DefaultValue { get; set; }
+    public string? ArrayDim { get; set; }
+    public string? Bitfield { get; set; }
+    public bool IsPrivate { get; set; }
+    public bool IsExtern { get; set; }
+    public bool IsStatic { get; set; }
+    public bool IsFriend { get; set; }
+    public bool IsConst { get; set; }
+    public bool IsConstexpr { get; set; }
+    public bool IsUnion { get; set; }
     public bool ForceUnion { get; set; }
+
+    public CppField(string type, string name)
+    {
+        Type = type;
+        Name = name;
+    }
 }
 
 [DebuggerDisplay("{" + nameof(Name) + "}")]
-public class CppStruct : PackageItemBase
+public sealed class CppStruct : PackageItemBase
 {
-    [JsonProperty("Name")]
     public string Name { get; set; }
-
-    [JsonProperty("Supers")]
-    public List<string> Supers { get; set; } = new();
-
-    [JsonProperty("Alignas")]
+    public List<string> Supers { get; set; }
     public int Alignas { get; set; }
-
-    [JsonProperty("IsClass")]
     public bool IsClass { get; set; }
-
-    [JsonProperty("IsUnion")]
     public bool IsUnion { get; set; }
+    public List<string> TemplateParams { get; set; }
+    public List<string> Friends { get; set; }
+    public List<CppField> Fields { get; set; }
+    public List<CppFunction> Methods { get; set; }
 
-    [JsonProperty("TemplateParams")]
-    public List<string> TemplateParams { get; set; } = new();
-
-    [JsonProperty("Friends")]
-    public List<string> Friends { get; set; } = new();
-
-    [JsonProperty("Fields")]
-    public List<CppField> Fields { get; set; } = new();
-
-    [JsonProperty("Methods")]
-    public List<CppFunction> Methods { get; set; } = new();
+    public CppStruct(string name)
+    {
+        Name = name;
+        TemplateParams = [];
+        Friends = [];
+        Fields = [];
+        Methods = [];
+        Supers = [];
+    }
 }
 
-public class CppPackage : ILang
+public sealed class CppPackage
 {
-    [JsonProperty("Name")]
     public string Name { get; set; }
+    public string? NameSpace { get; set; }
+    public string? BeforeNameSpace { get; set; }
+    public string? AfterNameSpace { get; set; }
+    public string? CppBeforeNameSpace { get; set; }
+    public string? CppAfterNameSpace { get; set; }
+    public List<string> Pragmas { get; set; }
+    public List<string> Includes { get; set; }
+    public List<string> CppIncludes { get; set; }
+    public List<string> PackageHeaderIncludes { get; set; }
+    public List<string> HeadingComment { get; set; }
+    public List<string> TypeDefs { get; set; }
+    public List<CppDefine> Defines { get; set; }
+    public List<string> Forwards { get; set; }
+    public List<CppEnum> Enums { get; set; }
+    public List<CppConstant> Constants { get; set; }
+    public List<CppStruct> Structs { get; set; }
+    public List<CppField> Fields { get; set; }
+    public List<CppFunction> Functions { get; set; }
 
-    [JsonProperty("Pragmas")]
-    public List<string> Pragmas { get; set; } = new();
-
-    [JsonProperty("Includes")]
-    public List<string> Includes { get; set; } = new();
-
-    [JsonProperty("CppIncludes")]
-    public List<string> CppIncludes { get; set; } = new();
-
-    [JsonProperty("PackageHeaderIncludes")]
-    public List<string> PackageHeaderIncludes { get; set; } = new();
-
-    [JsonProperty("HeadingComment")]
-    public List<string> HeadingComment { get; set; } = new();
-
-    [JsonProperty("TypeDefs")]
-    public List<string> TypeDefs { get; set; } = new();
-
-    [JsonProperty("Defines")]
-    public List<CppDefine> Defines { get; set; } = new();
-
-    [JsonProperty("Conditions")]
-    public List<string> Conditions { get; set; } = new();
-
-    [JsonProperty("NameSpace")]
-    public string NameSpace { get; set; }
-
-    [JsonProperty("BeforeNameSpace")]
-    public string BeforeNameSpace { get; set; }
-
-    [JsonProperty("AfterNameSpace")]
-    public string AfterNameSpace { get; set; }
-
-    [JsonProperty("CppBeforeNameSpace")]
-    public string CppBeforeNameSpace { get; set; }
-
-    [JsonProperty("CppAfterNameSpace")]
-    public string CppAfterNameSpace { get; set; }
-
-    [JsonProperty("Forwards")]
-    public List<string> Forwards { get; set; } = new();
-
-    [JsonProperty("Enums")]
-    public List<CppEnum> Enums { get; set; } = new();
-
-    [JsonProperty("Constants")]
-    public List<CppConstant> Constants { get; set; } = new();
-
-    [JsonProperty("Structs")]
-    public List<CppStruct> Structs { get; set; } = new();
-
-    [JsonProperty("Fields")]
-    public List<CppField> Fields { get; set; } = new();
-
-    [JsonProperty("Functions")]
-    public List<CppFunction> Functions { get; set; } = new();
-
-    [JsonProperty("Lang")]
-    public string Lang { get; private set; }
+    public CppPackage(string name)
+    {
+        Name = name;
+        Pragmas = [];
+        Includes = [];
+        CppIncludes = [];
+        PackageHeaderIncludes = [];
+        HeadingComment = [];
+        TypeDefs = [];
+        Defines = [];
+        Forwards = [];
+        Enums = [];
+        Constants = [];
+        Structs = [];
+        Fields = [];
+        Functions = [];
+    }
 }
