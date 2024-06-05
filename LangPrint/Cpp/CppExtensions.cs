@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using LangPrint.Utils;
-
 namespace LangPrint.Cpp;
 
 public static class CppExtensions
 {
+    /*
     public static string MakeHeaderFile(this CppProcessor processor, CppPackage package)
     {
         var sb = new LangStringWriter(processor.Options);
@@ -361,4 +357,5 @@ public static class CppExtensions
 
         return ret;
     }
+    */
 }

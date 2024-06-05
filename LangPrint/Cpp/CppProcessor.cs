@@ -15,9 +15,10 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
 
     public string GetFileHeader(
         IEnumerable<string>? headingComment,
-        string? nameSpace,
+        string? @namespace,
         List<string>? pragmas,
         List<string>? includes,
+        List<string>? forwardDeclarations,
         List<CppDefine>? defines,
         List<string>? typeDefs,
         string? beforeNameSpace,
@@ -42,6 +43,12 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
             sb.Append(GenerateIncludes(includes, indentLvl));
         }
 
+        // Forward declarations
+        if (forwardDeclarations?.Count > 0)
+        {
+            sb.Append(GenerateForwards(forwardDeclarations, indentLvl));
+        }
+
         // Defines
         if (defines?.Count > 0)
         {
@@ -62,22 +69,22 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         }
 
         // NameSpace
-        if (!string.IsNullOrWhiteSpace(nameSpace))
+        if (!string.IsNullOrWhiteSpace(@namespace))
         {
             sb.Append(Helper.GetIndent(indentLvl));
-            sb.Append($"namespace {nameSpace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
+            sb.Append($"namespace {@namespace}{Options.GetNewLineText()}{{{Options.GetNewLineText()}");
             indentLvl++;
         }
 
         return sb.ToString();
     }
 
-    public string GetFileFooter(string? nameSpace, string? afterNameSpace, ref int indentLvl)
+    public string GetFileFooter(bool namespaceClose, string? afterNamespace, ref int indentLvl)
     {
         var sb = new LangStringWriter(Options);
 
         // Close NameSpace
-        if (!string.IsNullOrWhiteSpace(nameSpace))
+        if (namespaceClose)
         {
             indentLvl--;
             sb.Append($"{Helper.GetIndent(indentLvl)}}}{Options.GetNewLineText()}");
@@ -85,9 +92,9 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         }
 
         // AfterNameSpace
-        if (!string.IsNullOrWhiteSpace(afterNameSpace))
+        if (!string.IsNullOrWhiteSpace(afterNamespace))
         {
-            sb.Append(afterNameSpace);
+            sb.Append(afterNamespace);
         }
 
         sb.Append(Options.GetNewLineText());
