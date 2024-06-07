@@ -484,27 +484,27 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
 
             bool lastVarIsPrivate = false;
             bool lastVarIsUnion = false;
-            List<CppField> variables = @struct.Fields.Where(v => !string.IsNullOrWhiteSpace(v.Name)).ToList();
+            List<CppField> fields = @struct.Fields.Where(v => !string.IsNullOrWhiteSpace(v.Name)).ToList();
 
             // Force write "private" or "public"
-            if (variables.Count > 0)
+            if (fields.Count > 0)
             {
-                lastVarIsPrivate = !variables[0].IsPrivate;
+                lastVarIsPrivate = !fields[0].IsPrivate;
             }
 
-            foreach (CppField structVar in variables)
+            foreach (CppField f in fields)
             {
                 // Private or Public
-                if (structVar.IsPrivate != lastVarIsPrivate)
+                if (f.IsPrivate != lastVarIsPrivate)
                 {
-                    lastVarIsPrivate = structVar.IsPrivate;
+                    lastVarIsPrivate = f.IsPrivate;
                     sb.Append($"{Helper.GetIndent(baseIndentLvl - 1)}");
-                    sb.Append(structVar.IsPrivate ? "private:" : "public:");
+                    sb.Append(f.IsPrivate ? "private:" : "public:");
                     sb.Append(Options.GetNewLineText());
                 }
 
                 // Close union
-                if ((structVar.ForceUnion && lastVarIsUnion) || (!structVar.IsUnion && lastVarIsUnion))
+                if ((f.ForceUnion && lastVarIsUnion) || (!f.IsUnion && lastVarIsUnion))
                 {
                     lastVarIsUnion = false;
                     baseIndentLvl--;
@@ -512,7 +512,7 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
                 }
 
                 // Open union
-                if (structVar.IsUnion && !lastVarIsUnion)
+                if (f.IsUnion && !lastVarIsUnion)
                 {
                     lastVarIsUnion = true;
                     sb.Append($"{Helper.GetIndent(baseIndentLvl)}union{Options.GetNewLineText()}");
@@ -521,7 +521,7 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
                 }
 
                 // Print field
-                sb.Append(GetFieldString(structVar, true, baseIndentLvl));
+                sb.Append(GetFieldString(f, true, baseIndentLvl));
                 sb.Append(Options.GetNewLineText());
             }
 
