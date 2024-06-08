@@ -21,7 +21,7 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         List<string>? forwardDeclarations,
         List<CppDefine>? defines,
         List<string>? typeDefs,
-        string? beforeNameSpace,
+        string? beforeNamespace,
         out int indentLvl
     )
     {
@@ -62,9 +62,9 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         }
 
         // BeforeNameSpace
-        if (!string.IsNullOrWhiteSpace(beforeNameSpace))
+        if (!string.IsNullOrWhiteSpace(beforeNamespace))
         {
-            sb.Append(beforeNameSpace + Options.GetNewLineText());
+            sb.Append(beforeNamespace + Options.GetNewLineText());
             sb.Append(Options.GetNewLineText());
         }
 
