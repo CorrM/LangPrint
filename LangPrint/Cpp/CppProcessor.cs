@@ -313,10 +313,11 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
 
     public string GetFunctionString(CppFunction func, CppStruct? parent, bool declaration, int baseIndentLvl)
     {
-        bool forceAddBody = declaration;
-        forceAddBody &= (parent is not null && parent.TemplateParams.Count > 0) ||
-                        func.TemplateParameters.Count > 0 ||
-                        func.IsFriend;
+        bool forceAddBody = declaration &&
+                            ((parent is not null && parent.TemplateParams.Count > 0) ||
+                             func.TemplateParameters.Count > 0 ||
+                             func.IsInline ||
+                             func.IsFriend);
 
         var sb = new LangStringWriter(Options);
         sb.Append(GetBeforePrint(func, baseIndentLvl));
@@ -350,7 +351,7 @@ public sealed class CppProcessor : LangProcessor<CppLangOptions>
         }
 
         // Inline
-        if (func.IsInline && declaration)
+        if (func.IsInline)
         {
             sb.Append("inline ");
         }

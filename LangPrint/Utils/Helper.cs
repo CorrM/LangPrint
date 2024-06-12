@@ -17,7 +17,7 @@ public static class Helper
 
     public static string GetIndent(int lvl)
     {
-        return lvl <= 0 ? string.Empty : string.Concat(Enumerable.Repeat("\t", lvl));
+        return lvl <= 0 ? string.Empty : string.Concat(Enumerable.Repeat("    ", lvl));
         //: string.Concat(Enumerable.Repeat(new string(' ', Options.IndentSize), lvl));
     }
 
